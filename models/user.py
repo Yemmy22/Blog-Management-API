@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """
-This module defines the `User` class with enhanced security features.
-
+This module defines the User class with enhanced security features.
 Attributes:
     id (int): Primary key of the user.
     username (str): Unique username of the user.
@@ -17,7 +16,6 @@ Attributes:
     created_at (datetime): Timestamp of user creation.
     updated_at (datetime): Timestamp of last update.
 """
-
 from sqlalchemy import (
     Column, Integer, String, Boolean, DateTime, 
     Table, ForeignKey, Index
@@ -35,8 +33,26 @@ user_roles = Table(
 )
 
 class User(Base):
+    """
+    User model class representing the users table.
+    
+    Attributes:
+        id (Column): Primary key of the user.
+        username (Column): Unique username of the user.
+        email (Column): Email address of the user.
+        password (Column): Hashed password of the user.
+        email_verified (Column): Status of email verification.
+        is_active (Column): Indicates if the user account is active.
+        failed_login_count (Column): Count of consecutive failed login attempts.
+        locked_until (Column): Timestamp until which account is locked.
+        password_changed_at (Column): Timestamp of last password change.
+        force_password_change (Column): Flag indicating if password change is required.
+        last_login (Column): Timestamp of the last successful login.
+        created_at (Column): Timestamp of user creation.
+        updated_at (Column): Timestamp of last update.
+    """
     __tablename__ = 'users'
-
+    
     id = Column(Integer, primary_key=True)
     username = Column(String(100), unique=True, nullable=False)
     email = Column(String(100), unique=True, nullable=False)
@@ -50,29 +66,40 @@ class User(Base):
     last_login = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+    
     # Relationships
     roles = relationship('Role', secondary=user_roles, back_populates='users')
     posts = relationship('Post', back_populates='author')
     comments = relationship('Comment', back_populates='user')
     audit_logs = relationship('AuditLog', back_populates='user')
     login_attempts = relationship('LoginAttempt', back_populates='user')
-
+    
     # Indexes
     __table_args__ = (
         Index('idx_username', username),
         Index('idx_email', email),
     )
-
+    
     @property
     def is_locked(self):
-        """Check if the user account is currently locked."""
+        """
+        Check if the user account is currently locked.
+        
+        Returns:
+            bool: True if account is locked, False otherwise
+        """
         if self.locked_until and self.locked_until > datetime.utcnow():
             return True
         return False
-
+        
     def increment_failed_login(self):
-        """Increment failed login count and lock account if threshold reached."""
+        """
+        Increment failed login count and lock account if threshold reached.
+        
+        This method increments the failed login counter and locks the account
+        for 30 minutes if the threshold (5 attempts) is reached.
+        """
         self.failed_login_count += 1
         if self.failed_login_count >= 5:  # Configurable threshold
             self.locked_until = datetime.utcnow() + timedelta(minutes=30)
+
