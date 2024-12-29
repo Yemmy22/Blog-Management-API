@@ -11,6 +11,7 @@ Attributes:
 """
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from models import Base
 
