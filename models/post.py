@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """
 This module defines the `Post` class with content management and analytics features.
-
 Attributes:
     id (int): Primary key of the post.
     title (str): Title of the post.
@@ -18,13 +17,13 @@ Attributes:
     meta_title (str): SEO meta title for the post.
     meta_description (str): SEO meta description for the post.
     user_id (int): Foreign key referencing the authoring user.
+    category_id (int): Foreign key referencing the category.
     tags (relationship): Many-to-many relationship with `Tag`.
     comments (relationship): One-to-many relationship with `Comment`.
     likes (relationship): One-to-many relationship with `PostLike`.
     views (relationship): One-to-many relationship with `PostView`.
     revisions (relationship): One-to-many relationship with `PostRevision`.
 """
-
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Enum, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -38,7 +37,7 @@ class PostStatus(enum.Enum):
 
 class Post(Base):
     __tablename__ = 'posts'
-
+    
     id = Column(Integer, primary_key=True)
     title = Column(String(200), nullable=False)
     slug = Column(String(250), unique=True, nullable=False)
@@ -54,17 +53,20 @@ class Post(Base):
     meta_title = Column(String(150))
     meta_description = Column(String(255))
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-
+    category_id = Column(Integer, ForeignKey('categories.id'), nullable=False)  # Added this line
+    
     # Relationships
     author = relationship('User', back_populates='posts')
+    category = relationship('Category', back_populates='posts')  # Modified this line
     tags = relationship('Tag', secondary='post_tags', back_populates='posts')
     comments = relationship('Comment', back_populates='post')
     likes = relationship('PostLike', back_populates='post')
     views = relationship('PostView', back_populates='post')
     revisions = relationship('PostRevision', back_populates='post')
-
+    
     # Indexes
     __table_args__ = (
         Index('idx_slug', slug),
         Index('idx_created_at', created_at),
+        Index('idx_category_id', category_id),  # Added this index
     )
