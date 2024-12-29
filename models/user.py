@@ -16,6 +16,7 @@ Attributes:
     created_at (datetime): Timestamp of user creation.
     updated_at (datetime): Timestamp of last update.
 """
+
 from sqlalchemy import (
     Column, Integer, String, Boolean, DateTime, 
     Table, ForeignKey, Index
@@ -67,13 +68,14 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships
+    # Relationships using string references
     roles = relationship('Role', secondary=user_roles, back_populates='users')
     posts = relationship('Post', back_populates='author')
     comments = relationship('Comment', back_populates='user')
     audit_logs = relationship('AuditLog', back_populates='user')
     login_attempts = relationship('LoginAttempt', back_populates='user')
-    
+    sessions = relationship('UserSession', back_populates='user')  # Added missing sessions relationship
+
     # Indexes
     __table_args__ = (
         Index('idx_username', username),
@@ -100,6 +102,5 @@ class User(Base):
         for 30 minutes if the threshold (5 attempts) is reached.
         """
         self.failed_login_count += 1
-        if self.failed_login_count >= 5:  # Configurable threshold
+        if self.failed_login_count >= 5: # Configurable threshold
             self.locked_until = datetime.utcnow() + timedelta(minutes=30)
-

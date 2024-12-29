@@ -13,6 +13,7 @@ Attributes:
     deleted_at (datetime): Timestamp of soft deletion.
 """
 
+
 from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey, Boolean, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -30,14 +31,13 @@ class Comment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     deleted_at = Column(DateTime)
 
-    # Relationships
+    # Relationships using string references
     post = relationship('Post', back_populates='comments')
     user = relationship('User', back_populates='comments')
-    replies = relationship('Comment', backref=relationship('Comment', remote_side=[id]))
+    parent = relationship('Comment', remote_side=[id], backref='replies')
 
     # Indexes
     __table_args__ = (
         Index('idx_post_id', post_id),
         Index('idx_created_at', created_at),
     )
-
