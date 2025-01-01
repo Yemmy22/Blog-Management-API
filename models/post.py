@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 """
-This module defines the Post class.
+This module defines the Post class for blog content management.
 
-The Post class represents blog posts with extended features including
+The Post class represents blog posts with support including tags and engagement metrics,
 SEO optimization, content analysis, and version tracking.
 
 Classes:
@@ -35,9 +35,7 @@ class PostStatus(enum.Enum):
 
 class Post(Base):
     """
-    Enhanced Post model class with additional features.
-    
-    This class extends the basic Post model with additional fields for
+    This class defines the structure for blog posts, including content, metadata, and relationships with categories, tags, and comments,
     SEO, content analysis, and version tracking.
     
     Attributes:
