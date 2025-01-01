@@ -1,25 +1,38 @@
 #!/usr/bin/python3
 """
-This module defines the `Comment` class, representing comments with moderation and threading support.
+This module defines the Comment class for managing post comments.
 
-Attributes:
-    id (int): Primary key of the comment.
-    post_id (int): Foreign key referencing the associated post.
-    user_id (int): Foreign key referencing the authoring user.
-    parent_id (int): Foreign key referencing the parent comment for threading.
-    content (str): Content of the comment.
-    is_approved (bool): Indicates if the comment is approved.
-    created_at (datetime): Timestamp of comment creation.
-    deleted_at (datetime): Timestamp of soft deletion.
+The Comment class represents user comments on blog posts, supporting
+threading capabilities and moderation features.
+
+Classes:
+    Comment: Represents a post comment
 """
-
-
 from sqlalchemy import Column, Integer, Text, DateTime, ForeignKey, Boolean, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from models import Base
 
 class Comment(Base):
+    """
+    Comment model class representing post comments.
+    
+    This class defines the structure for blog post comments,
+    including threading support and moderation capabilities.
+    
+    Attributes:
+        id (Column): Primary key of the comment
+        post_id (Column): Foreign key to the associated post
+        user_id (Column): Foreign key to the comment author
+        parent_id (Column): Foreign key to parent comment (for threading)
+        content (Column): Comment text content
+        is_approved (Column): Moderation status flag
+        created_at (Column): Timestamp of comment creation
+        post (relationship): Many-to-one relationship with Post model
+        user (relationship): Many-to-one relationship with User model
+        parent (relationship): Self-referential relationship for threading
+        replies (relationship): Reverse of the parent relationship
+    """
     __tablename__ = 'comments'
 
     id = Column(Integer, primary_key=True)
@@ -29,9 +42,8 @@ class Comment(Base):
     content = Column(Text, nullable=False)
     is_approved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    deleted_at = Column(DateTime)
-
-    # Relationships using string references
+    
+    # Relationships
     post = relationship('Post', back_populates='comments')
     user = relationship('User', back_populates='comments')
     parent = relationship('Comment', remote_side=[id], backref='replies')

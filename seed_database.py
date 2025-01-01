@@ -2,22 +2,38 @@
 """
 Seed initial data into the database.
 
-This script creates initial roles and users in the database.
-It handles the creation of admin and editor roles,
-and a test user with admin privileges.
-"""
+This script creates initial data in the database including:
+- User roles (Admin, Editor)
+- Test users
+- Sample categories
+- Sample tags
+- Sample blog post
+- Sample comment
 
+It ensures proper relationships between all entities.
+"""
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from models import Base
 from models.role import Role
 from models.user import User
+from models.category import Category
+from models.tag import Tag
+from models.post import Post, PostStatus
+from models.comment import Comment
 from config import DB_URI
+from datetime import datetime
+import bcrypt
+
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt."""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def seed_database():
     """
     Seed the database with initial data.
-    Creates roles and users with proper relationships.
+    Creates roles, users, categories, tags, and sample content.
     """
     # Connect to the database
     engine = create_engine(DB_URI, pool_pre_ping=True)
@@ -33,38 +49,84 @@ def seed_database():
         print("Starting database seeding...")
         
         # Create roles
-        print("Creating admin role...")
+        print("Creating roles...")
         admin_role = Role(
             name="Admin",
-            description="Administrator role"
+            description="Full system access"
         )
-        
-        print("Creating editor role...")
         editor_role = Role(
             name="Editor",
-            description="Editor role"
+            description="Can manage content"
         )
         
-        # Add roles to session
-        session.add(admin_role)
-        session.add(editor_role)
-        
-        # Flush to get role IDs
+        session.add_all([admin_role, editor_role])
         session.flush()
         
-        print("Creating test user...")
-        # Create test user
-        test_user = User(
-            username="testuser",
-            email="test@example.com",
-            password="hashedpassword"  # Note: In production, use proper password hashing
+        # Create test users
+        print("Creating test users...")
+        admin_user = User(
+            username="admin",
+            email="admin@example.com",
+            password=hash_password("admin123"),
+            roles=[admin_role]
         )
         
-        # Add role to user
-        test_user.roles = [admin_role]
+        editor_user = User(
+            username="editor",
+            email="editor@example.com",
+            password=hash_password("editor123"),
+            roles=[editor_role]
+        )
         
-        # Add user to session
-        session.add(test_user)
+        session.add_all([admin_user, editor_user])
+        session.flush()
+        
+        # Create categories
+        print("Creating categories...")
+        categories = [
+            Category(name="Technology"),
+            Category(name="Travel"),
+            Category(name="Lifestyle")
+        ]
+        session.add_all(categories)
+        session.flush()
+        
+        # Create tags
+        print("Creating tags...")
+        tags = [
+            Tag(name="python", slug="python"),
+            Tag(name="web development", slug="web-development"),
+            Tag(name="tutorial", slug="tutorial")
+        ]
+        session.add_all(tags)
+        session.flush()
+        
+        # Create sample post
+        print("Creating sample post...")
+        sample_post = Post(
+            title="Getting Started with Python",
+            slug="getting-started-with-python",
+            content="This is a sample blog post about Python programming...",
+            status=PostStatus.PUBLISHED,
+            user_id=admin_user.id,
+            category_id=categories[0].id,  # Technology category
+            tags=tags[:2],  # Python and Web Development tags
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        session.add(sample_post)
+        session.flush()
+        
+        # Create sample comment
+        print("Creating sample comment...")
+        sample_comment = Comment(
+            post_id=sample_post.id,
+            user_id=editor_user.id,
+            content="Great introduction to Python!",
+            is_approved=True,
+            created_at=datetime.utcnow()
+        )
+        session.add(sample_comment)
         
         # Commit all changes
         session.commit()
@@ -72,10 +134,8 @@ def seed_database():
         
     except Exception as e:
         print(f"An error occurred while seeding the database: {str(e)}")
-        print("Full error traceback:")
-        import traceback
-        print(traceback.format_exc())
         session.rollback()
+        raise
     finally:
         session.close()
 

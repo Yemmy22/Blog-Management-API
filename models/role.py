@@ -1,26 +1,29 @@
 #!/usr/bin/python3
 """
-This module defines the Role class, representing a role for RBAC.
-Attributes:
-    id (int): Primary key of the role.
-    name (str): Name of the role.
-    description (str): Description of the role.
-    users (relationship): Many-to-many relationship with User.
+This module defines the Role class for role-based access control.
+
+The Role class represents different user roles in the system, enabling
+granular access control and permission management.
+
+Classes:
+    Role: Represents a user role in the system
 """
 from sqlalchemy import Column, Integer, String, Index
 from sqlalchemy.orm import relationship
 from models import Base
-from models.user import user_roles
 
 class Role(Base):
     """
-    Role model class representing the roles table.
+    Role model class representing user roles.
+    
+    This class defines the structure for user roles in the system,
+    enabling role-based access control (RBAC).
     
     Attributes:
-        id (Column): Primary key of the role.
-        name (Column): Name of the role.
-        description (Column): Description of the role.
-        users (relationship): Many-to-many relationship with User model.
+        id (Column): Primary key of the role
+        name (Column): Unique name of the role (e.g., 'admin', 'writer')
+        description (Column): Detailed description of the role's purpose
+        users (relationship): Many-to-many relationship with User model
     """
     __tablename__ = 'roles'
     
@@ -29,7 +32,7 @@ class Role(Base):
     description = Column(String(200))
     
     # Relationships
-    users = relationship('User', secondary=user_roles, back_populates='roles')
+    users = relationship('User', secondary='user_roles', back_populates='roles')
     
     # Indexes
     __table_args__ = (
