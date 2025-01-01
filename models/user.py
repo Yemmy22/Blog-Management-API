@@ -1,16 +1,28 @@
 #!/usr/bin/python3
 """
+This module defines the User class and the user_roles association table.
+
 The User class represents system users with extended profile information,
 authentication capabilities, and security features.
 
 Classes:
     User: Represents a user in the system with profile features
+
+Tables:
+    user_roles: Association table for User-Role many-to-many relationship
 """
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Table, ForeignKey, Index
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 from models import Base
 from .validators import validate_username, validate_email
+
+user_roles = Table(
+    'user_roles',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('role_id', Integer, ForeignKey('roles.id'), primary_key=True)
+)
 
 class User(Base):
     """
