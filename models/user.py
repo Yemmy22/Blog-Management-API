@@ -7,9 +7,6 @@ authentication capabilities, and security features.
 
 Classes:
     User: Represents a user in the system with profile features
-
-Tables:
-    user_roles: Association table for User-Role many-to-many relationship
 """
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Table, ForeignKey, Index
 from sqlalchemy.orm import relationship, validates
@@ -25,28 +22,7 @@ user_roles = Table(
 )
 
 class User(Base):
-    """
-    Enhanced User model class with additional profile features.
-    
-    This class extends the basic User model with additional fields for
-    profile information, authentication, and security features.
-    
-    Attributes:
-        id (Column): Primary key of the user
-        username (Column): Unique username for identification
-        email (Column): User's email address
-        password (Column): Hashed password for authentication
-        first_name (Column): User's first name
-        last_name (Column): User's last name
-        bio (Column): User's biography or description
-        avatar_url (Column): URL to user's profile picture
-        is_active (Column): Flag indicating if the account is active
-        last_login (Column): Timestamp of last login
-        password_reset_token (Column): Token for password reset
-        password_reset_expires (Column): Expiration of reset token
-        created_at (Column): Timestamp of user creation
-        updated_at (Column): Timestamp of last update
-    """
+    """Enhanced User model class with additional profile features."""
     __tablename__ = 'users'
     
     id = Column(Integer, primary_key=True)
@@ -54,7 +30,7 @@ class User(Base):
     email = Column(String(100), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     
-    # New profile fields
+    # Profile fields
     first_name = Column(String(50))
     last_name = Column(String(50))
     bio = Column(Text)
@@ -75,6 +51,28 @@ class User(Base):
     posts = relationship('Post', back_populates='author')
     comments = relationship('Comment', back_populates='user')
 
+    def to_dict(self):
+        """
+        Convert User object to dictionary.
+        
+        Returns:
+            dict: User data dictionary (excluding sensitive information)
+        """
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'bio': self.bio,
+            'avatar_url': self.avatar_url,
+            'is_active': self.is_active,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'roles': [role.name for role in self.roles]
+        }
+
     # Validators
     @validates('username')
     def validate_username(self, key, username):
@@ -90,4 +88,3 @@ class User(Base):
         Index('idx_email', 'email'),
         Index('idx_reset_token', 'password_reset_token'),
     )
-
