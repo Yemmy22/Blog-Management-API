@@ -15,7 +15,7 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 from models import Base
-from models.validators import validate_slug
+from models.validators import validate_slug, estimate_reading_time
 import enum
 
 class PostStatus(enum.Enum):
