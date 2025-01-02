@@ -11,7 +11,7 @@ Classes:
 """
 
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Index, event
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 from models import Base
