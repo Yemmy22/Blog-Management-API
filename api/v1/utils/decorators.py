@@ -12,8 +12,10 @@ Functions:
 from functools import wraps
 from flask import request, g
 from typing import Callable
+from ..auth.service import AuthService
 from .responses import error_response
 
+auth_service = AuthService()
 
 def require_auth(f: Callable) -> Callable:
     """
@@ -28,12 +30,14 @@ def require_auth(f: Callable) -> Callable:
     @wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        if not auth_header or ' ' not in auth_header:
             return error_response("No authentication token provided", 401)
 
         try:
-            # Add token verification logic here
+            # Add token verification
             token = auth_header.split(' ')[1]
+            if not auth_service.validate_token(token):
+                return error_response("Invalid authentication token", 401)
             # Verify token and set user in g
             return f(*args, **kwargs)
         except Exception as e:
