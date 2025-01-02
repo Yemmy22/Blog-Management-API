@@ -115,15 +115,21 @@ class AuthService:
             if not user:
                 raise AuthenticationError("Invalid credentials")
             
-            if not bcrypt.checkpw(password.encode('utf-8'), user.password):
+            if not bcrypt.checkpw(
+                    password.encode('utf-8'),
+                    user.password.encode('utf-8') if isinstance(user.password, str) else user.password
+        ):
                 raise AuthenticationError("Invalid credentials")
             
             user.last_login = datetime.utcnow()
             self._db.session.commit()
+
+            # Generate new token
+            token, expires_at = self._token_manager.generate_token(user.id)
             
             return {
                 "user": user.to_dict(),
-                "token": self._generate_token(user.id),
+                "token": token,
                 "expires_at": expires_at.isoformat()
             }
             
