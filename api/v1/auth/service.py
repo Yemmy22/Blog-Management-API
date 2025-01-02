@@ -88,7 +88,7 @@ class AuthService:
             
             return {
                 "user": user.to_dict(),
-                "token": self._generate_token(user.id),
+                "token": token,
                 "expires_at": expires_at.isoformat()
             }
             
