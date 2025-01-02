@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """
 Entry point for the Flask application.
-
 This module initializes the Flask application, configures the database,
 and registers all blueprints and routes.
 """
@@ -32,6 +31,15 @@ def create_app():
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
+    
+    # Error handling
+    @app.errorhandler(404)
+    def not_found(error):
+        return {'error': 'Not found'}, 404
+
+    @app.errorhandler(500)
+    def server_error(error):
+        return {'error': 'Internal server error'}, 500
     
     return app
 
@@ -76,7 +84,8 @@ def init_db():
         print(f"An error occurred: {e}")
         session.rollback()
     finally:
-        session.close()
+        if 'session' in locals():
+            session.close()
 
 if __name__ == "__main__":
     app = create_app()
