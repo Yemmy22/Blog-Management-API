@@ -17,6 +17,7 @@ from models.role import Role
 from models.user import User, user_roles
 from models.category import Category
 from models.tag import Tag, post_tags
+from models.post_revision import PostRevision
 from models.post import Post
 from models.comment import Comment
 
