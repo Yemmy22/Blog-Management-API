@@ -201,15 +201,3 @@ class AuthService:
         except SQLAlchemyError as e:
             self._db.session.rollback()
             raise AuthenticationError(f"Password reset failed: {str(e)}")
-    
-    def _generate_token(self, user_id: int) -> str:
-        """
-        Generate authentication token.
-        
-        Args:
-            user_id: User's ID
-            
-        Returns:
-            Authentication token
-        """
-        return str(uuid4())
