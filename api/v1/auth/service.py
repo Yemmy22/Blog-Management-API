@@ -11,12 +11,13 @@ Classes:
 """
 import bcrypt
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.exc import SQLAlchemyError
 from models.user import User
 from models.role import Role
 from uuid import uuid4
 from db import DB
+from .token_management import TokenManager
 
 
 class AuthenticationError(Exception):
@@ -33,11 +34,13 @@ class AuthService:
     
     Attributes:
         _db: Database session instance
+        _token_manager: Token management instance
     """
     
     def __init__(self):
         """Initialize AuthService with database session."""
         self._db = DB()
+        self._token_manager = TokenManager(self._db)
     
     def register_user(self, email: str, password: str, **kwargs) -> Dict[str, Any]:
         """
@@ -79,10 +82,14 @@ class AuthService:
             
             self._db.session.add(user)
             self._db.session.commit()
+
+          # Generate token
+            token, expires_at = self._token_manager.generate_token(user.id)
             
             return {
                 "user": user.to_dict(),
                 "token": self._generate_token(user.id)
+                "expires_at": expires_at.isoformat()
             }
             
         except SQLAlchemyError as e:
@@ -117,11 +124,24 @@ class AuthService:
             return {
                 "user": user.to_dict(),
                 "token": self._generate_token(user.id)
+                "expires_at": expires_at.isoformat()
             }
             
         except SQLAlchemyError as e:
             self._db.session.rollback()
             raise AuthenticationError(f"Login failed: {str(e)}")
+
+    def validate_token(self, token: str) -> bool:
+        """
+        Validate an authentication token.
+
+        Args:
+            token: Token to validate
+
+        Returns:
+            Boolean indicating token validity
+        """
+        return self._token_manager.validate_token(token)
     
     def request_password_reset(self, email: str) -> str:
         """
