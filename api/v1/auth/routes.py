@@ -12,7 +12,7 @@ Routes:
     POST /auth/reset-password: Request password reset
     PUT  /auth/reset-password: Process password reset
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from .service import AuthService, AuthenticationError
 from .validators import validate_email, validate_password
 from ..utils.responses import success_response, error_response
@@ -85,10 +85,44 @@ def logout():
     """
     User logout endpoint.
     
+    Requires valid authentication token in Authorization header.
+    Invalidates the provided token.
+    
     Returns:
         Success message
     """
-    return success_response("Logout successful")
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or ' ' not in auth_header:
+        return error_response("Invalid authorization header", 401)
+    
+    token = auth_header.split(' ')[1]
+    
+    try:
+        auth_service.logout_user(token)
+        return success_response("Logout successful")
+    except AuthenticationError as e:
+        return error_response(str(e), 400)
+
+@auth_bp.route('/validate-token', methods=['GET'])
+def validate_token():
+    """
+    Token validation endpoint.
+    
+    Validates the provided authentication token.
+    
+    Returns:
+        Success message if token is valid
+    """
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or ' ' not in auth_header:
+        return error_response("Invalid authorization header", 401)
+    
+    token = auth_header.split(' ')[1]
+    
+    if auth_service.validate_token(token):
+        return success_response("Token is valid")
+    else:
+        return error_response("Invalid or expired token", 401)
 
 @auth_bp.route('/reset-password', methods=['POST'])
 def request_reset():
