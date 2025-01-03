@@ -207,3 +207,17 @@ class AuthService:
         except SQLAlchemyError as e:
             self._db.session.rollback()
             raise AuthenticationError(f"Password reset failed: {str(e)}")
+
+    def logout_user(self, token: str) -> None:
+        """Invalidate user token by blacklisting it."""
+        try:
+            if not self._token_manager.validate_token(token):
+                raise AuthenticationError("Invalid token")
+
+            # Get expiration from token (implement token parsing)
+            expires_at = datetime.utcnow() + timedelta(hours=24)  # Default fallback
+            self._token_manager.blacklist_token(token, expires_at)
+
+        except SQLAlchemyError as e:
+            self._db.session.rollback()
+            raise AuthenticationError(f"Logout failed: {str(e)}")
