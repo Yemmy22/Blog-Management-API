@@ -9,6 +9,7 @@ Functions:
     require_auth: Decorator to verify authentication token
     validate_request: Decorator to validate request data
 """
+
 from functools import wraps
 from flask import request, g
 from typing import Callable
@@ -75,3 +76,26 @@ def validate_request(schema: dict) -> Callable:
             return f(*args, **kwargs)
         return decorated
     return decorator
+
+def require_admin(f: Callable) -> Callable:
+    """
+    Decorator to verify the user has admin role.
+    Must be used after @require_auth decorator.
+
+    Args:
+        f: Route function to decorate
+
+    Returns:
+        Decorated function with admin check
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not g.current_user:
+            return error_response("Authentication required", 401)
+
+        # Check if user has admin role
+        if not any(role.name == 'admin' for role in g.current_user.roles):
+            return error_response("Admin access required", 403)
+
+        return f(*args, **kwargs)
+    return decorated
