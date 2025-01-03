@@ -13,6 +13,7 @@ from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 from models import Base
 from .validators import validate_username, validate_email
+from typing import Dict, Any
 
 user_roles = Table(
     'user_roles',
@@ -51,27 +52,33 @@ class User(Base):
     posts = relationship('Post', back_populates='author')
     comments = relationship('Comment', back_populates='user')
 
-    def to_dict(self):
+    def to_dict(self, include_private: bool = False) -> Dict[str, Any]:
         """
-        Convert User object to dictionary.
-        
+        Convert user object to dictionary representation.
+
         Returns:
-            dict: User data dictionary (excluding sensitive information)
+        Dictionary containing user data (excluding sensitive information)
         """
-        return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'bio': self.bio,
-            'avatar_url': self.avatar_url,
-            'is_active': self.is_active,
-            'last_login': self.last_login.isoformat() if self.last_login else None,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            'roles': [role.name for role in self.roles]
-        }
+        # Base fields (always visible)
+        data = {
+                'id': self.id,
+                'username': self.username,
+                'first_name': self.first_name,
+                'last_name': self.last_name,
+                'bio': self.bio,
+                'avatar_url': self.avatar_url,
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+                'roles': [role.name for role in self.roles],
+                }
+        # Private fields (only visible to self and admins)
+        if include_private:
+            data.update({
+                'email': self.email,
+                'is_active': self.is_active,
+                'last_login': self.last_login.isoformat() if self.last_login else None,
+                'updated_at': self.updated_at.isoformat() if self.updated_at else None
+                })
+            return data
 
     # Validators
     @validates('username')
