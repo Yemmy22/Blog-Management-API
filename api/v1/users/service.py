@@ -105,9 +105,18 @@ class UserService:
                 raise UserServiceError("User not found")
             
             # Return full profile for own user or admin
-            return user.to_dict(
-                include_private=user_id == current_user_id
-            )
+            # Get the current user to check if they're an admin
+       current_user = self._db.session.query(User).get(current_user_id)
+        if not current_user:
+            raise UserServiceError("Current user not found")
+
+       # Check if current user is an admin by looking for admin role
+        is_admin = any(role.name == 'admin' for role in current_user.roles)
+
+       # Include private data if user is viewing their own profile or is an admin
+        include_private = user_id == current_user_id or is_admin
+
+            return user.to_dict(include_private=include_private)
             
         except SQLAlchemyError as e:
             raise UserServiceError(f"Failed to retrieve user: {str(e)}")
