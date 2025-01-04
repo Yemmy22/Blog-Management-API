@@ -90,8 +90,10 @@ def require_admin(f: Callable) -> Callable:
     """
     @wraps(f)
     def decorated(*args, **kwargs):
+        """
         if not g.current_user:
             return error_response("Authentication required", 401)
+        """
 
         # Check if user has admin role
         if not g.current_user or not any(role.name == 'admin' for role in g.current_user.roles):
