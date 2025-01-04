@@ -128,7 +128,7 @@ class AuthService:
             token, expires_at = self._token_manager.generate_token(user.id)
             
             return {
-                "user": user.to_dict(),
+                "user": user.to_dict(include_private=True),
                 "token": token,
                 "expires_at": expires_at.isoformat()
             }

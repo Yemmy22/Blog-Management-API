@@ -94,7 +94,7 @@ def require_admin(f: Callable) -> Callable:
             return error_response("Authentication required", 401)
 
         # Check if user has admin role
-        if not any(role.name == 'admin' for role in g.current_user.roles):
+        if not g.current_user or not any(role.name == 'admin' for role in g.current_user.roles):
             return error_response("Admin access required", 403)
 
         return f(*args, **kwargs)
