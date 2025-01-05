@@ -71,6 +71,9 @@ class TokenManager:
         """
         token = str(uuid4())
         expires_at = datetime.utcnow() + self._token_lifetime
+
+        # Store token-user mapping
+        self._store_token_user_mapping(token, user_id)
         return token, expires_at
 
     def get_user_id_from_token(self, token: str) -> Optional[int]:
@@ -96,12 +99,15 @@ class TokenManager:
             ).first()
             
             if blacklisted:
-                return False
+                return False, None
+
+            # Add token-to-user mapping storage and retrieval
+            user_id = self.get_user_id_from_token(token)
                 
-            return True
+            return True, user_id
             
         except SQLAlchemyError:
-            return False
+            return False, None
     
     def blacklist_token(self, token: str, expires_at: datetime) -> None:
         """
