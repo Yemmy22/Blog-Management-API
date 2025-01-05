@@ -58,7 +58,8 @@ class TokenManager:
         """
         self._db = db
         self._token_lifetime = timedelta(hours=token_lifetime_hours)
-    
+        self._token_user_map = {}  # Initialize the map
+
     def generate_token(self, user_id: int) -> Tuple[str, datetime]:
         """
         Generate a new authentication token.
@@ -102,12 +103,16 @@ class TokenManager:
                 return False, None
 
             # Add token-to-user mapping storage and retrieval
-            user_id = self.get_user_id_from_token(token)
+            user_id = self._token_user_map.get(token)
                 
             return True, user_id
             
         except SQLAlchemyError:
             return False, None
+
+    def _store_token_user_mapping(self, token: str, user_id: int) -> None:
+        """Store token to user mapping."""
+        self._token_user_map[token] = user_id
     
     def blacklist_token(self, token: str, expires_at: datetime) -> None:
         """
