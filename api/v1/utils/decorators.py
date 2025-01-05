@@ -15,8 +15,10 @@ from flask import request, g
 from typing import Callable
 from ..auth.service import AuthService
 from .responses import error_response
+from db import DB
 
 auth_service = AuthService()
+db = DB()
 
 def require_auth(f: Callable) -> Callable:
     """
@@ -39,9 +41,18 @@ def require_auth(f: Callable) -> Callable:
             token = auth_header.split(' ')[1]
             if not auth_service.validate_token(token):
                 return error_response("Invalid authentication token", 401)
+            # Get user from database
+            user = db.session.query(User).get(user_id)
+            if not user:
+                return error_response("User not found", 401)
+
+            # Set current user in Flask's g object
+            g.current_user = user
+
             # Verify token and set user in g
             return f(*args, **kwargs)
         except Exception as e:
+            current_app.logger.error(f'Auth error: {str(e)}')
             return error_response("Invalid authentication token", 401)
 
     return decorated
