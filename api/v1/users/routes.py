@@ -12,7 +12,7 @@ Routes:
     DELETE /users/{id}:   Delete user (admin only)
     GET /users/{id}/posts: Get user's posts
 """
-from flask import Blueprint, request, g
+from flask import Blueprint, request, g, current_app
 from .service import UserService, UserServiceError
 from ..utils.responses import success_response, error_response
 from ..utils.decorators import require_auth, validate_request, require_admin
@@ -42,11 +42,18 @@ def list_users():
         per_page = request.args.get('per_page', 10, type=int)
         sort = request.args.get('sort', 'created_at')
         order = request.args.get('order', 'desc')
+
+        current_app.logger.info(f'Listing users: page={page}, per_page={per_page}, sort={sort}, order={order}')
         
         result = user_service.list_users(page, per_page, sort, order)
         return success_response("Users retrieved successfully", result)
     except UserServiceError as e:
+        current_app.logger.error(f'Error listing users: {str(e)}')
         return error_response(str(e), 400)
+
+    except Exception as e:
+        current_app.logger.error(f'Unexpected error listing users: {str(e)}')
+        return error_response("Internal server error", 500)
 
 @users_bp.route('/<int:user_id>', methods=['GET'])
 @require_auth
