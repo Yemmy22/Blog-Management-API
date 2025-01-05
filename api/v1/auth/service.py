@@ -137,15 +137,15 @@ class AuthService:
             self._db.session.rollback()
             raise AuthenticationError(f"Login failed: {str(e)}")
 
-    def validate_token(self, token: str) -> bool:
+    def validate_token(self, token: str) -> Tuple[bool, Optional[int]]:
         """
-        Validate an authentication token.
+        Validate an authentication token and return validity and user ID.
 
         Args:
             token: Token to validate
 
         Returns:
-            Boolean indicating token validity
+            Tuple[bool, Optional[int]]: (is_valid, user_id)
         """
         return self._token_manager.validate_token(token)
     

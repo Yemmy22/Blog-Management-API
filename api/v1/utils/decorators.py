@@ -43,7 +43,7 @@ def require_auth(f: Callable) -> Callable:
             # Get both validity and user ID
             is_valid, user_id = auth_service.validate_token(token)
 
-            if not auth_service.validate_token(token):
+            if not is_valid or user_id is None:
                 return error_response("Invalid authentication token", 401)
             # Get user from database
             user = db.session.query(User).get(user_id)
