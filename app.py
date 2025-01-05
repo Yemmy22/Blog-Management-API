@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from models import Base
 from config import DB_URI
 from api.v1.auth.routes import auth_bp
+from api.v1.users.routes import users_bp
 
 def create_app():
     """
@@ -31,7 +32,8 @@ def create_app():
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
-    
+    app.register_blueprint(users_bp, url_prefix='/api/v1')
+
     # Error handling
     @app.errorhandler(404)
     def not_found(error):
