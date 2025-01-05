@@ -72,6 +72,12 @@ class TokenManager:
         token = str(uuid4())
         expires_at = datetime.utcnow() + self._token_lifetime
         return token, expires_at
+
+    def get_user_id_from_token(self, token: str) -> Optional[int]:
+        """
+        Get user ID associated with token.
+        """
+        return self._token_user_map.get(token)
     
     def validate_token(self, token: str) -> bool:
         """
