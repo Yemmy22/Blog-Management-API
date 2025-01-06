@@ -11,7 +11,7 @@ Classes:
 from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from uuid import uuid4
-from sqlalchemy import Column, String, DateTime, Integer
+from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Boolean
 from models import Base
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -23,6 +23,7 @@ class TokenUser(Base):
     user_id = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
     expires_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True)
 
 class BlacklistedToken(Base):
     """Model class for storing blacklisted tokens."""
@@ -50,7 +51,8 @@ class TokenManager:
                 token=token,
                 user_id=user_id,
                 created_at=datetime.utcnow(),
-                expires_at=expires_at
+                expires_at=expires_at,
+                is_active=True
             )
             self._db.session.add(token_user)
             self._db.session.commit()
@@ -59,7 +61,7 @@ class TokenManager:
             
         except SQLAlchemyError as e:
             self._db.session.rollback()
-            raise ValueError(f"Failed to store token: {str(e)}")
+            raise ValueError(f"Token generation failed: {str(e)}")
 
     def validate_token(self, token: str) -> Tuple[bool, Optional[int]]:
         """
@@ -79,7 +81,8 @@ class TokenManager:
             
             # Get user ID from token mapping
             token_user = self._db.session.query(TokenUser).filter_by(
-                token=token
+                token=token,
+                is_active=True
             ).first()
             
             if not token_user:
@@ -87,6 +90,8 @@ class TokenManager:
                 
             # Check if token has expired
             if token_user.expires_at < datetime.utcnow():
+                user_token.is_active = False
+                self._db.session.commit()
                 return False, None
                 
             return True, token_user.user_id
@@ -98,7 +103,9 @@ class TokenManager:
         """Blacklist an authentication token."""
         try:
             # Remove token-user mapping
-            self._db.session.query(TokenUser).filter_by(token=token).delete()
+            user_token = self._db.session.query(TokenUser).filter_by(token=token)
+            if user_token:
+                user_token.is_active = False
             
             # Add to blacklist
             blacklisted_token = BlacklistedToken(

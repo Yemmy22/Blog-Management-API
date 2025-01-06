@@ -11,7 +11,7 @@ Classes:
 """
 import bcrypt
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from sqlalchemy.exc import SQLAlchemyError
 from models.user import User
 from models.role import Role

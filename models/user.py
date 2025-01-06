@@ -43,6 +43,10 @@ class User(Base):
     password_reset_token = Column(String(100), unique=True)
     password_reset_expires = Column(DateTime)
     
+    # Authentication token fields
+    auth_token = Column(String(100), unique=True)
+    token_expires_at = Column(DateTime)
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
