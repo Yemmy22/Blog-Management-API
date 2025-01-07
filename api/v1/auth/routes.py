@@ -3,10 +3,11 @@
 Authentication routes for the Blog Management API.
 
 This module defines the routes for authentication, including
-user login and registration.
+user login, registration, and logout.
 """
 from flask import Blueprint, request, jsonify
 from api.v1.auth.service import AuthService
+from services.token_service import TokenService
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -34,3 +35,14 @@ def register():
         return jsonify({"message": "User registered successfully"}), 201
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+@auth_bp.route('/logout', methods=['POST'])
+def logout():
+    """Handle user logout."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Token required"}), 401
+
+    token = auth_header.split(" ")[1]
+    TokenService.invalidate_token(token)
+    return jsonify({"message": "Logged out successfully"}), 200

@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 """
-Token service for managing password reset tokens.
+Token service for managing session tokens.
 
-This module provides functions for generating, storing, and validating
-temporary tokens, such as those used for password resets.
+This module provides functions for generating, validating, and invalidating
+tokens, such as those used for login sessions.
 
 Classes:
     TokenService: Handles token operations using Redis.
@@ -13,17 +13,18 @@ from redis_connection import redis_client
 
 class TokenService:
     """
-    Provides methods to generate and validate password reset tokens.
+    Provides methods to generate, validate, and invalidate session tokens.
 
     Methods:
-        generate_reset_token: Generate and store a reset token.
-        validate_reset_token: Validate and delete a reset token.
+        generate_session_token: Generate and store a session token.
+        validate_session_token: Validate an existing session token.
+        invalidate_token: Invalidate a session token.
     """
 
     @staticmethod
-    def generate_reset_token(user_id, expires_in=3600):
+    def generate_session_token(user_id, expires_in=3600):
         """
-        Generate and store a password reset token.
+        Generate and store a session token.
 
         Args:
             user_id (int): The ID of the user.
@@ -33,14 +34,14 @@ class TokenService:
             str: The generated token.
         """
         token = str(uuid.uuid4())
-        key = f"password_reset:{token}"
+        key = f"session:{token}"
         redis_client.set(key, user_id, ex=expires_in)
         return token
 
     @staticmethod
-    def validate_reset_token(token):
+    def validate_session_token(token):
         """
-        Validate and delete a password reset token.
+        Validate a session token.
 
         Args:
             token (str): The token to validate.
@@ -48,8 +49,17 @@ class TokenService:
         Returns:
             int or None: The user ID associated with the token, or None if invalid.
         """
-        key = f"password_reset:{token}"
+        key = f"session:{token}"
         user_id = redis_client.get(key)
-        if user_id:
-            redis_client.delete(key)  # Ensure the token is single-use
         return user_id
+
+    @staticmethod
+    def invalidate_token(token):
+        """
+        Invalidate a session token.
+
+        Args:
+            token (str): The token to invalidate.
+        """
+        key = f"session:{token}"
+        redis_client.delete(key)
