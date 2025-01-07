@@ -1,19 +1,18 @@
 #!/usr/bin/python3
 """
-This module defines the User class and the user_roles association table.
+User model for the Blog Management API.
 
-The User class represents system users with extended profile information,
-authentication capabilities, and security features.
+Defines the `User` class, representing system users with profile
+information, authentication capabilities, and security features.
 
 Classes:
-    User: Represents a user in the system with profile features
+    User: Represents a user in the system.
 """
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Table, ForeignKey, Index
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 from models import Base
-from .validators import validate_username, validate_email
-from typing import Dict, Any
+from validators.validators import validate_username, validate_email
 
 user_roles = Table(
     'user_roles',
@@ -23,79 +22,47 @@ user_roles = Table(
 )
 
 class User(Base):
-    """Enhanced User model class with additional profile features."""
+    """
+    Represents a user in the system.
+
+    Attributes:
+        id (int): Unique identifier for the user.
+        username (str): Unique username.
+        email (str): Unique email address.
+        password (str): Hashed password.
+        first_name (str): First name of the user.
+        last_name (str): Last name of the user.
+        is_active (bool): Account status.
+        created_at (datetime): Timestamp of user creation.
+    """
     __tablename__ = 'users'
-    
+
     id = Column(Integer, primary_key=True)
     username = Column(String(30), unique=True, nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    
-    # Profile fields
     first_name = Column(String(50))
     last_name = Column(String(50))
-    bio = Column(Text)
-    avatar_url = Column(String(255))
-    
-    # Authentication and security
     is_active = Column(Boolean, default=True, nullable=False)
-    last_login = Column(DateTime)
-    password_reset_token = Column(String(100), unique=True)
-    password_reset_expires = Column(DateTime)
-    
-    # Authentication token fields
-    auth_token = Column(String(100), unique=True)
-    token_expires_at = Column(DateTime)
-
-    # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     roles = relationship('Role', secondary='user_roles', back_populates='users')
     posts = relationship('Post', back_populates='author')
     comments = relationship('Comment', back_populates='user')
 
-    def to_dict(self, include_private: bool = False) -> Dict[str, Any]:
-        """
-        Convert user object to dictionary representation.
-
-        Returns:
-        Dictionary containing user data (excluding sensitive information)
-        """
-        # Base fields (always visible)
-        data = {
-                'id': self.id,
-                'username': self.username,
-                'first_name': self.first_name,
-                'last_name': self.last_name,
-                'bio': self.bio,
-                'avatar_url': self.avatar_url,
-                'created_at': self.created_at.isoformat() if self.created_at else None,
-                'roles': [role.name for role in self.roles],
-                }
-        # Private fields (only visible to self and admins)
-        if include_private:
-            data.update({
-                'email': self.email,
-                'is_active': self.is_active,
-                'last_login': self.last_login.isoformat() if self.last_login else None,
-                'updated_at': self.updated_at.isoformat() if self.updated_at else None
-                })
-            return data
-
     # Validators
     @validates('username')
     def validate_username(self, key, username):
         return validate_username(username)
-    
+
     @validates('email')
     def validate_email(self, key, email):
         return validate_email(email)
-    
+
     # Indexes
     __table_args__ = (
         Index('idx_username', 'username'),
         Index('idx_email', 'email'),
-        Index('idx_reset_token', 'password_reset_token'),
     )

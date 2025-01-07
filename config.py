@@ -1,19 +1,26 @@
 #!/usr/bin/python3
+"""
+Configuration settings for the Blog Management API.
 
+This module defines the configuration for the application, including
+database connections, Redis settings, and secret keys.
+
+Classes:
+    Config: Centralized configuration class
+"""
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+class Config:
+    """
+    Configuration class for application settings.
 
-def get_env_variable(name):
-    value = os.getenv(name)
-    if value is None:
-        raise ValueError(f"Environment variable {name} is not set")
-    return value
-
-DB_USER = get_env_variable('DB_USER')
-DB_PASSWORD = get_env_variable('DB_PASSWORD')
-DB_HOST = get_env_variable('DB_HOST')
-DB_NAME = get_env_variable('DB_NAME')
-
-DB_URI = f"mysql+mysqldb://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+    Attributes:
+        SECRET_KEY (str): Secret key for session management and JWT.
+        SQLALCHEMY_DATABASE_URI (str): Database connection URI.
+        REDIS_HOST (str): Redis host address.
+        REDIS_PORT (int): Redis port.
+    """
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-secret-key')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///blog.db')
+    REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))

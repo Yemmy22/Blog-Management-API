@@ -15,21 +15,19 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
 from sqlalchemy.orm import relationship, validates
 from datetime import datetime
 from models import Base
-from models.validators import validate_slug, estimate_reading_time
+from validators.validators import validate_slug, estimate_reading_time
 import enum
 
 class PostStatus(enum.Enum):
     """
     Enum defining possible post statuses.
-    
+
     Attributes:
         DRAFT: Initial working state
-        AUTOSAVE: Automatically saved version
         PUBLISHED: Publicly visible state
         ARCHIVED: Removed from public view
     """
     DRAFT = "draft"
-    AUTOSAVE = "autosave"
     PUBLISHED = "published"
     ARCHIVED = "archived"
 
@@ -37,7 +35,7 @@ class Post(Base):
     """
     This class defines the structure for blog posts, including content, metadata, and relationships with categories, tags, and comments,
     SEO, content analysis, and version tracking.
-    
+
     Attributes:
         id (Column): Primary key of the post
         title (Column): Post title

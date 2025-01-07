@@ -1,223 +1,72 @@
 #!/usr/bin/python3
 """
-Authentication service module.
+Authentication service for the Blog Management API.
 
-This module provides the AuthService class which handles core authentication
-business logic including user registration, login, and password management.
+This module provides the business logic for user authentication,
+including login, registration, and token generation.
 
 Classes:
-    AuthenticationError: Custom exception for authentication failures
-    AuthService: Service class handling authentication operations
+    AuthService: Handles authentication-related operations.
 """
-import bcrypt
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, Tuple
-from sqlalchemy.exc import SQLAlchemyError
-from models.user import User
-from models.role import Role
-from uuid import uuid4
-from db import DB
-from .token_management import TokenManager
-
-
-class AuthenticationError(Exception):
-    """Custom exception for authentication-related errors."""
-    pass
-
+from werkzeug.security import generate_password_hash, check_password_hash
+from app import Session
+from models import User
+from services.token_service import TokenService
 
 class AuthService:
     """
-    Service class for handling authentication operations.
-    
-    This class encapsulates core authentication business logic,
-    providing methods for registration, login, and password management.
-    
-    Attributes:
-        _db: Database session instance
-        _token_manager: Token management instance
+    Service class for authentication-related operations.
+
+    Methods:
+        login: Authenticate a user and return a token.
+        register: Register a new user in the system.
     """
-    
-    def __init__(self):
-        """Initialize AuthService with database session."""
-        self._db = DB()
-        self._token_manager = TokenManager(self._db)
-    
-    def register_user(self, email: str, password: str, **kwargs) -> Dict[str, Any]:
-        """
-        Register a new user.
-        
-        Args:
-            email: User's email address
-            password: User's password
-            **kwargs: Additional user attributes
-            
-        Returns:
-            Dict containing user information and token
-            
-        Raises:
-            AuthenticationError: If registration fails
-        """
-        try:
-            # Check existing user
-            if self._db.session.query(User).filter_by(email=email).first():
-                raise AuthenticationError("Email already registered")
-            
-            # Hash password
-            hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-            
-            # Create user
-            user = User(
-                email=email,
-                password=hashed,
-                created_at=datetime.utcnow(),
-                **kwargs
-            )
-            
-            # Add default role
-            default_role = self._db.session.query(Role).filter_by(
-                name='user'
-            ).first()
-            if default_role:
-                user.roles.append(default_role)
-            
-            self._db.session.add(user)
-            self._db.session.commit()
 
-          # Generate token
-            token, expires_at = self._token_manager.generate_token(user.id)
-            
-            return {
-                "user": user.to_dict(),
-                "token": token,
-                "expires_at": expires_at.isoformat()
-            }
-            
-        except SQLAlchemyError as e:
-            self._db.session.rollback()
-            raise AuthenticationError(f"Registration failed: {str(e)}")
-    
-    def login_user(self, email: str, password: str) -> Dict[str, Any]:
+    @staticmethod
+    def login(email, password):
         """
-        Authenticate a user login.
-        
-        Args:
-            email: User's email
-            password: User's password
-            
-        Returns:
-            Dict containing user information and token
-            
-        Raises:
-            AuthenticationError: If login fails
-        """
-        try:
-            user = self._db.session.query(User).filter_by(email=email).first()
-            if not user:
-                raise AuthenticationError("Invalid credentials")
-            
-            if not bcrypt.checkpw(
-                    password.encode('utf-8'),
-                    user.password.encode('utf-8') if isinstance(user.password, str) else user.password
-        ):
-                raise AuthenticationError("Invalid credentials")
-            
-            user.last_login = datetime.utcnow()
-            self._db.session.commit()
-
-            # Generate new token
-            token, expires_at = self._token_manager.generate_token(user.id)
-            
-            return {
-                "user": user.to_dict(include_private=True),
-                "token": token,
-                "expires_at": expires_at.isoformat()
-            }
-            
-        except SQLAlchemyError as e:
-            self._db.session.rollback()
-            raise AuthenticationError(f"Login failed: {str(e)}")
-
-    def validate_token(self, token: str) -> Tuple[bool, Optional[int]]:
-        """
-        Validate an authentication token and return validity and user ID.
+        Authenticate a user and return a token.
 
         Args:
-            token: Token to validate
+            email (str): The user's email address.
+            password (str): The user's password.
 
         Returns:
-            Tuple[bool, Optional[int]]: (is_valid, user_id)
-        """
-        return self._token_manager.validate_token(token)
-    
-    def request_password_reset(self, email: str) -> str:
-        """
-        Generate password reset token.
-        
-        Args:
-            email: User's email address
-            
-        Returns:
-            Reset token
-            
+            str: A JWT token for the authenticated user.
+
         Raises:
-            AuthenticationError: If user not found
+            ValueError: If authentication fails.
         """
-        try:
-            user = self._db.session.query(User).filter_by(email=email).first()
-            if not user:
-                raise AuthenticationError("User not found")
-            
-            token = str(uuid4())
-            user.password_reset_token = token
-            user.password_reset_expires = datetime.utcnow() + timedelta(hours=24)
-            
-            self._db.session.commit()
-            return token
-            
-        except SQLAlchemyError as e:
-            self._db.session.rollback()
-            raise AuthenticationError(f"Reset request failed: {str(e)}")
-    
-    def reset_password(self, token: str, new_password: str) -> None:
+        session = Session()
+        user = session.query(User).filter_by(email=email).first()
+        if not user or not check_password_hash(user.password, password):
+            raise ValueError("Invalid email or password.")
+
+        token = TokenService.generate_reset_token(user.id)
+        return token
+
+    @staticmethod
+    def register(email, username, password):
         """
-        Reset user password with token.
-        
+        Register a new user in the system.
+
         Args:
-            token: Reset token
-            new_password: New password
-            
+            email (str): The user's email address.
+            username (str): The user's username.
+            password (str): The user's password.
+
         Raises:
-            AuthenticationError: If reset fails or token invalid
+            ValueError: If the email or username is already in use.
         """
-        try:
-            user = self._db.session.query(User).filter_by(
-                password_reset_token=token
-            ).first()
-            
-            if not user or user.password_reset_expires < datetime.utcnow():
-                raise AuthenticationError("Invalid or expired reset token")
-            
-            hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
-            user.password = hashed
-            user.password_reset_token = None
-            user.password_reset_expires = None
-            
-            self._db.session.commit()
-            
-        except SQLAlchemyError as e:
-            self._db.session.rollback()
-            raise AuthenticationError(f"Password reset failed: {str(e)}")
+        session = Session()
 
-    def logout_user(self, token: str) -> None:
-        """Invalidate user token by blacklisting it."""
-        try:
-            if not self._token_manager.validate_token(token):
-                raise AuthenticationError("Invalid token")
+        if session.query(User).filter_by(email=email).first():
+            raise ValueError("Email is already in use.")
 
-            # Get expiration from token (implement token parsing)
-            expires_at = datetime.utcnow() + timedelta(hours=24)  # Default fallback
-            self._token_manager.blacklist_token(token, expires_at)
+        if session.query(User).filter_by(username=username).first():
+            raise ValueError("Username is already in use.")
 
-        except SQLAlchemyError as e:
-            self._db.session.rollback()
-            raise AuthenticationError(f"Logout failed: {str(e)}")
+        hashed_password = generate_password_hash(password)
+        new_user = User(email=email, username=username, password=hashed_password)
+        session.add(new_user)
+        session.commit()

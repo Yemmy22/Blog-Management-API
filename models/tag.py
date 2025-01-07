@@ -19,20 +19,18 @@ from models import Base
 post_tags = Table(
     'post_tags',
     Base.metadata,
-    Column('post_id', Integer, ForeignKey('posts.id', ondelete='CASCADE'), 
-           primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id', ondelete='CASCADE'), 
-           primary_key=True),
+    Column('post_id', Integer, ForeignKey('posts.id', ondelete='CASCADE'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True),
     Column('created_at', DateTime, default=datetime.utcnow)
 )
 
 class Tag(Base):
     """
     Tag model class representing post tags.
-    
+
     This class defines the structure for post tags, enabling
     content organization and search functionality.
-    
+
     Attributes:
         id (Column): Primary key of the tag
         name (Column): Unique name of the tag
@@ -46,7 +44,7 @@ class Tag(Base):
     name = Column(String(50), unique=True, nullable=False)
     slug = Column(String(50), unique=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     posts = relationship('Post', secondary=post_tags, back_populates='tags')
 

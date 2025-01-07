@@ -16,10 +16,10 @@ from models import Base
 class Comment(Base):
     """
     Comment model class representing post comments.
-    
+
     This class defines the structure for blog post comments,
     including threading support and moderation capabilities.
-    
+
     Attributes:
         id (Column): Primary key of the comment
         post_id (Column): Foreign key to the associated post
@@ -42,7 +42,7 @@ class Comment(Base):
     content = Column(Text, nullable=False)
     is_approved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     post = relationship('Post', back_populates='comments')
     user = relationship('User', back_populates='comments')

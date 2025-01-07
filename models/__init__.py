@@ -6,7 +6,7 @@ This package contains SQLAlchemy ORM models representing the core entities
 of the blog management system. It provides the foundation for database
 operations and relationships between different models.
 
-Classes:
+Attributes:
     Base: SQLAlchemy declarative base class for all models
 """
 from sqlalchemy.ext.declarative import declarative_base
@@ -21,7 +21,7 @@ from models.post_revision import PostRevision
 from models.post import Post
 from models.comment import Comment
 
-all = [
+__all__ = [
     "Base", "User", "Role", "Post", "Category", 
     "Tag", "Comment", "user_roles", "post_tags"
 ]
