@@ -6,9 +6,7 @@ This module initializes the application, sets up configurations,
 and registers the API routes.
 """
 from flask import Flask
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
-from models import Base
+from db import Session, populate_roles
 from api import api
 from config import Config
 
@@ -16,13 +14,8 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Create engine and bind metadata
-engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
-Base.metadata.bind = engine
-Base.metadata.create_all(engine)
-
-# Initialize session
-Session = scoped_session(sessionmaker(bind=engine))
+# Populate roles
+populate_roles()
 
 # Register API Blueprint
 app.register_blueprint(api, url_prefix='/api')

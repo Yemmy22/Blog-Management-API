@@ -23,6 +23,25 @@ class AuthService:
     """
 
     @staticmethod
+    def register(email, username, password):
+        session = Session()
+        if session.query(User).filter_by(email=email).first():
+            raise ValueError("Email is already in use.")
+        if session.query(User).filter_by(username=username).first():
+            raise ValueError("Username is already in use.")
+
+        hashed_password = generate_password_hash(password)
+        new_user = User(email=email, username=username, password=hashed_password)
+
+        # Assign default role (e.g., 'reader')
+        default_role = session.query(Role).filter_by(name='reader').first()
+        if default_role:
+            new_user.roles.append(default_role)
+
+        session.add(new_user)
+        session.commit()
+
+    @staticmethod
     def login(email, password):
         """
         Authenticate a user and return a token.
@@ -68,5 +87,11 @@ class AuthService:
 
         hashed_password = generate_password_hash(password)
         new_user = User(email=email, username=username, password=hashed_password)
+
+        # Assign default role (e.g., 'reader')
+        default_role = session.query(Role).filter_by(name='reader').first()
+        if default_role:
+            new_user.roles.append(default_role)
+
         session.add(new_user)
         session.commit()

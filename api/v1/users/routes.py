@@ -54,3 +54,15 @@ def delete_user(user_id):
     session.delete(user)
     session.commit()
     return jsonify({"message": "User deleted successfully"}), 200
+
+from api.v1.users.decorators import require_role
+
+@users_bp.route('/admin-dashboard', methods=['GET'])
+@require_role(['admin'])
+def admin_dashboard():
+    return {"message": "Welcome, Admin!"}, 200
+
+@users_bp.route('/create-post', methods=['POST'])
+@require_role(['admin', 'writer'])
+def create_post():
+    return {"message": "Post created successfully!"}, 201
