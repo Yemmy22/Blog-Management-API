@@ -1,9 +1,10 @@
 #!/usr/bin/python3
-"""Database initialization script"""
+"""Database initialization script with added verification"""
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 from models import Base
 from config.database import DATABASE_URL
+from utils.password import hash_password, verify_password
 
 def init_database():
     """Initialize the database and create all tables"""
@@ -31,10 +32,8 @@ def create_initial_roles(session):
     ]
     
     for role_data in default_roles:
-        existing_role = session.query(Role).filter_by(name=role_data['name']).first()
-        if not existing_role:
-            role = Role(**role_data)
-            session.add(role)
+        role = Role(**role_data)
+        session.add(role)
     
     session.commit()
     print("Created default roles")
@@ -47,22 +46,47 @@ def create_admin_user(session):
     
     # Get admin role
     admin_role = session.query(Role).filter_by(name='admin').first()
+    if not admin_role:
+        print("Error: Admin role not found!")
+        return
     
     # Create admin user
-    admin_pass, _ = hash_password('admin123')  # Change this password in production!
-    admin_user = User(
-        username='admin',
-        email='admin@example.com',
-        password=admin_pass,
-        first_name='Admin',
-        last_name='User',
-        is_active=True
-    )
-    admin_user.roles.append(admin_role)
+    password = 'admin123'
+    hashed_pass, salt = hash_password(password)
     
-    session.add(admin_user)
+    # First, check if admin user already exists
+    existing_admin = session.query(User).filter_by(username='admin').first()
+    if existing_admin:
+        print("Admin user already exists - updating password")
+        existing_admin.password = hashed_pass
+    else:
+        print("Creating new admin user")
+        admin_user = User(
+            username='admin',
+            email='admin@example.com',
+            password=hashed_pass,
+            first_name='Admin',
+            last_name='User',
+            is_active=True
+        )
+        admin_user.roles.append(admin_role)
+        session.add(admin_user)
+    
     session.commit()
-    print("Created admin user")
+    
+    # Verify the user was created and password works
+    admin_user = session.query(User).filter_by(username='admin').first()
+    if admin_user:
+        print(f"Admin user created successfully (id: {admin_user.id})")
+        print(f"Email: {admin_user.email}")
+        print(f"Has admin role: {any(role.name == 'admin' for role in admin_user.roles)}")
+        print("Testing password verification...")
+        if verify_password(password, admin_user.password):
+            print("Password verification successful!")
+        else:
+            print("Password verification failed!")
+    else:
+        print("Error: Failed to create admin user!")
 
 if __name__ == '__main__':
     from sqlalchemy.orm import sessionmaker
@@ -74,7 +98,7 @@ if __name__ == '__main__':
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(bind=engine)
     session = Session()
-    
+
     try:
         # Create initial data
         create_initial_roles(session)

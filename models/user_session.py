@@ -33,4 +33,4 @@ class UserSession(Base):
     user_agent = Column(String(255))
     ip_address = Column(String(45))
     # Relationships
-    user = relationship('User', back_populates='sessions')
+    user = relationship('User', back_populates='user_sessions')

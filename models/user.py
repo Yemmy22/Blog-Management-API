@@ -55,7 +55,7 @@ class User(Base):
     roles = relationship('Role', secondary='user_roles', back_populates='users')
     posts = relationship('Post', back_populates='author')
     comments = relationship('Comment', back_populates='user')
-    sessions = relationship('UserSession', back_populates='user')
+    user_sessions = relationship('UserSession', back_populates='user')
 
     # Validators
     @validates('username')

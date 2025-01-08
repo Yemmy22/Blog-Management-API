@@ -234,10 +234,16 @@ def reset_password(token):
         return jsonify({'error': 'New password is required'}), 400
         
     db = next(get_db())
+    user = db.query(User).filter(
+        User.password_reset_token == token,
+        User.password_reset_expires > datetime.utcnow()
+    ).first() 
+    """
     user = db.query(User).filter_by(
         password_reset_token=token,
         password_reset_expires={'$gt': datetime.utcnow()}
     ).first()
+    """
     
     if not user:
         return jsonify({'error': 'Invalid or expired reset token'}), 400
