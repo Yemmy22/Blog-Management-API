@@ -17,3 +17,5 @@ migrations/
 Thumbs.db
 
 requirements.txt
+
+alembic/
