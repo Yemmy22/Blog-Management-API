@@ -19,3 +19,4 @@ Thumbs.db
 requirements.txt
 
 alembic/
+*.ini
