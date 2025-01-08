@@ -1,8 +1,9 @@
-# config/database.py
+#!/usr/bin/python3
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "mysql+mysqldb://user:password@localhost/blog_db"
+DATABASE_URL = "mysql+mysqldb://root@localhost/blog_management"
 
 engine = create_engine(
     DATABASE_URL,
