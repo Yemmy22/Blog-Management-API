@@ -1,0 +1,19 @@
+# Ignore virtual environments
+venv/
+
+# Ignore Python cache files and directories
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore database migrations (optional, if you use migrations)
+migrations/
+
+# Ignore logs (optional)
+*.log
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+requirements.txt
