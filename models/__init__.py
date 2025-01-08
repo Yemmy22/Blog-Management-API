@@ -14,6 +14,7 @@ Base = declarative_base()
 
 # Import all models
 from models.role import Role
+from models.user_session import UserSession
 from models.user import User, user_roles
 from models.category import Category
 from models.tag import Tag, post_tags
@@ -23,5 +24,6 @@ from models.comment import Comment
 
 __all__ = [
     "Base", "User", "Role", "Post", "Category", 
-    "Tag", "Comment", "user_roles", "post_tags"
+    "Tag", "Comment", "user_roles", "post_tags",
+    "UserSession"
 ]
