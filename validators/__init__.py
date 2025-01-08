@@ -1,16 +1,20 @@
 #!/usr/bin/python3
 """
-Initialization module for validation utilities.
+Validators package initialization.
 
-This package contains utilities for validating data across the
-Blog Management API, including input validation for models and routes.
+This package provides validation functions for various data types
+used throughout the application.
 """
-# Import all validators
-from validators.validators import validate_email, validate_username, validate_slug, estimate_reading_time
+from validators.validators import (
+    validate_username,
+    validate_email,
+    validate_slug,
+    estimate_reading_time
+)
 
 __all__ = [
-    "validate_email",
-    "validate_username",
-    "validate_slug",
-    "estimate_reading_time"
+    'validate_username',
+    'validate_email',
+    'validate_slug',
+    'estimate_reading_time'
 ]

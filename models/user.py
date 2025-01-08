@@ -46,6 +46,10 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    password_reset_token = Column(String(255), unique=True)
+    password_reset_expires = Column(DateTime)
+    last_login = Column(DateTime)
+    deleted_at = Column(DateTime)
 
     # Relationships
     roles = relationship('Role', secondary='user_roles', back_populates='users')

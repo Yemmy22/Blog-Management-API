@@ -30,6 +30,7 @@ class UserSession(Base):
     session_token = Column(String(255), unique=True, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    user_agent = Column(String(255))
+    ip_address = Column(String(45))
     # Relationships
     user = relationship('User', back_populates='sessions')

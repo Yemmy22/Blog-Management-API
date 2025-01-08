@@ -54,7 +54,6 @@ class Post(Base):
         comments (relationship): One-to-many relationship with Comment model
         meta_description (Column): SEO meta description
         featured_image_url (Column): URL to post's featured image
-        reading_time (Column): Estimated reading duration
         published_at (Column): Timestamp of publication
         revisions (relationship): One-to-many relationship with PostRevision
     """
@@ -68,7 +67,6 @@ class Post(Base):
     # SEO and presentation
     meta_description = Column(String(160))  # Optimal SEO meta description length
     featured_image_url = Column(String(255))
-    reading_time = Column(Integer)  # in minutes
 
     # Status and metrics
     status = Column(Enum(PostStatus), default=PostStatus.DRAFT)
@@ -79,6 +77,7 @@ class Post(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     published_at = Column(DateTime)
+    deleted_at = Column(DateTime)
 
     # Foreign keys
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)

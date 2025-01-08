@@ -1,40 +1,105 @@
 #!/usr/bin/python3
 """
-Validation utilities for the Blog Management API.
+This module provides validation functions for data integrity.
 
-This module contains reusable validation functions for fields such as email,
-username, and slugs, as well as utilities for estimating reading time.
-
-Functions:
-    validate_email: Validate an email address.
-    validate_username: Validate a username.
-    validate_slug: Validate a URL-friendly slug.
-    estimate_reading_time: Estimate reading time for text content.
+These functions validate various types of input data and ensure
+they meet the required format and constraints.
 """
 import re
+from typing import Optional
 
-def validate_email(email):
-    """Validate an email address."""
-    pattern = r'^[\w.%+-]+@[\w.-]+\.[a-zA-Z]{2,}$'
-    if not re.match(pattern, email):
-        raise ValueError("Invalid email address")
-    return email
+def validate_username(username: str) -> str:
+    """
+    Validate username format.
 
-def validate_username(username):
-    """Validate a username."""
-    if len(username) < 3 or len(username) > 30:
+    Args:
+        username: Username to validate
+
+    Returns:
+        str: Validated username
+
+    Raises:
+        ValueError: If username format is invalid
+    """
+    if not username:
+        raise ValueError("Username cannot be empty")
+    
+    if not 3 <= len(username) <= 30:
         raise ValueError("Username must be between 3 and 30 characters")
+    
+    # Allow letters, numbers, underscore, hyphen
+    if not re.match(r'^[a-zA-Z0-9_-]+$', username):
+        raise ValueError("Username can only contain letters, numbers, underscore, and hyphen")
+    
     return username
 
-def validate_slug(slug):
-    """Validate a URL-friendly slug."""
-    pattern = r'^[a-z0-9]+(?:-[a-z0-9]+)*$'
-    if not re.match(pattern, slug):
-        raise ValueError("Invalid slug format")
+def validate_email(email: str) -> str:
+    """
+    Validate email format.
+
+    Args:
+        email: Email address to validate
+
+    Returns:
+        str: Validated email address
+
+    Raises:
+        ValueError: If email format is invalid
+    """
+    if not email:
+        raise ValueError("Email cannot be empty")
+    
+    # Basic email format validation
+    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(email_pattern, email):
+        raise ValueError("Invalid email format")
+    
+    return email.lower()
+
+def validate_slug(slug: str) -> str:
+    """
+    Validate and format URL slug.
+
+    Args:
+        slug: URL slug to validate
+
+    Returns:
+        str: Validated and formatted slug
+
+    Raises:
+        ValueError: If slug format is invalid
+    """
+    if not slug:
+        raise ValueError("Slug cannot be empty")
+    
+    # Convert to lowercase and replace spaces with hyphens
+    slug = slug.lower().strip()
+    slug = re.sub(r'[^\w\s-]', '', slug)
+    slug = re.sub(r'[-\s]+', '-', slug)
+    
+    if len(slug) > 250:
+        raise ValueError("Slug must be less than 250 characters")
+    
     return slug
 
-def estimate_reading_time(content):
-    """Estimate the reading time for text content."""
-    words_per_minute = 200  # Average reading speed
-    words = len(content.split())
-    return max(1, words // words_per_minute)
+def estimate_reading_time(content: str, wpm: int = 200) -> int:
+    """
+    Estimate reading time for content in minutes.
+
+    Args:
+        content: Text content to analyze
+        wpm: Words per minute reading speed (default: 200)
+
+    Returns:
+        int: Estimated reading time in minutes
+    """
+    if not content:
+        return 0
+        
+    # Count words (split by whitespace)
+    word_count = len(content.split())
+    
+    # Calculate reading time and round up to nearest minute
+    minutes = max(1, round(word_count / wpm))
+    
+    return minutes
