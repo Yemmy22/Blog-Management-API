@@ -8,6 +8,7 @@ registers blueprints, and sets up error handlers.
 from flask import Flask, jsonify
 from api.v1.auth import auth_bp
 from api.v1.posts import posts_bp
+from api.v1.categories import categories_bp
 from config.database import engine
 from models import Base
 from utils.redis_client import RedisClient
@@ -30,6 +31,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
     app.register_blueprint(posts_bp, url_prefix='/api/v1/posts')
+    app.register_blueprint(categories_bp, url_prefix='/api/v1/categories')
     
     # Create database tables
     Base.metadata.create_all(bind=engine)
