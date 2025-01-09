@@ -9,6 +9,7 @@ from flask import Flask, jsonify
 from api.v1.auth import auth_bp
 from api.v1.posts import posts_bp
 from api.v1.categories import categories_bp
+from api.v1.tags import tags_bp
 from config.database import engine
 from models import Base
 from utils.redis_client import RedisClient
@@ -32,6 +33,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
     app.register_blueprint(posts_bp, url_prefix='/api/v1/posts')
     app.register_blueprint(categories_bp, url_prefix='/api/v1/categories')
+    app.register_blueprint(tags_bp, url_prefix='/api/v1/tags')
     
     # Create database tables
     Base.metadata.create_all(bind=engine)
