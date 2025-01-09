@@ -7,8 +7,9 @@ including creating, reading, updating, and deleting comments.
 """
 from flask import Blueprint, request, jsonify, g
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime
-from models import Comment, Post, User
+from models import Comment, Post, User, AuditLog
 from config.database import SessionLocal
 from api.v1.auth import auth_required
 from utils.redis_client import RedisClient
@@ -42,36 +43,58 @@ def create_comment(post_id):
     data = request.get_json()
     
     # Validate input
-    if not data or 'content' not in data:
-        return jsonify({'error': 'Content is required'}), 400
+    if not data or 'content' not in data or len(data['content']) > 500:
+        return jsonify({'error': 'Content is required and must be less than 500 characters'}), 400
     
     # Check if post exists
     post = db.query(Post).get(post_id)
     if not post:
         return jsonify({'error': 'Post not found'}), 404
     
+    # Validate parent_id if provided
+    parent_id = data.get('parent_id')
+    if parent_id:
+        parent_comment = db.query(Comment).get(parent_id)
+        if not parent_comment or parent_comment.post_id != post_id:
+            return jsonify({'error': 'Invalid parent comment'}), 400
+    
     # Create comment
     comment = Comment(
         post_id=post_id,
         user_id=g.user.id,
         content=data['content'],
-        parent_id=data.get('parent_id'),
-        is_approved=True if g.user.roles else False  # Auto-approve for users with roles
+        parent_id=parent_id,
+        is_approved=g.user.is_admin  # Auto-approve for admin users
     )
-    
-    db.add(comment)
-    db.commit()
-    
-    # Clear cache
-    cache_key = f'post:{post_id}:comments'
-    redis_client.cache_delete(cache_key)
-    
-    return jsonify({
-        'id': comment.id,
-        'content': comment.content,
-        'created_at': comment.created_at.isoformat(),
-        'is_approved': comment.is_approved
-    }), 201
+    try:
+        db.add(comment)
+        db.commit()
+        
+        # Log the action
+        AuditLog.log_action(
+            db,
+            g.user.id,
+            'create',
+            'Comment',
+            comment.id,
+            {'content': data['content'], 'post_id': post_id},
+            request.remote_addr,
+            request.user_agent.string
+        )
+
+        # Clear cache
+        cache_key = f'post:{post_id}:comments'
+        redis_client.cache_delete(cache_key)
+        
+        return jsonify({
+            'id': comment.id,
+            'content': comment.content,
+            'created_at': comment.created_at.isoformat(),
+            'is_approved': comment.is_approved
+        }), 201
+    except IntegrityError:
+        db.rollback()
+        return jsonify({'error': 'Database error occurred'}), 500
 
 @comments_bp.route('/posts/<int:post_id>/comments', methods=['GET'])
 def get_comments(post_id):
@@ -96,16 +119,7 @@ def get_comments(post_id):
         .all()
     
     # Format response
-    response = [{
-        'id': comment.id,
-        'content': comment.content,
-        'created_at': comment.created_at.isoformat(),
-        'user': {
-            'id': comment.user.id,
-            'username': comment.user.username
-        },
-        'parent_id': comment.parent_id
-    } for comment in comments]
+    response = [comment.to_dict() for comment in comments]
     
     # Cache results
     redis_client.cache_set(cache_key, response, expire=300)  # Cache for 5 minutes
@@ -124,30 +138,42 @@ def update_comment(comment_id):
     db = get_db()
     data = request.get_json()
     
-    if not data or 'content' not in data:
-        return jsonify({'error': 'Content is required'}), 400
+    if not data or 'content' not in data or len(data['content']) > 500:
+        return jsonify({'error': 'Content is required and must be less than 500 characters'}), 400
     
     comment = db.query(Comment).get(comment_id)
     if not comment:
         return jsonify({'error': 'Comment not found'}), 404
     
     # Check if user owns comment or has moderator privileges
-    if comment.user_id != g.user.id and not any(role.name in ['admin', 'editor'] for role in g.user.roles):
+    if comment.user_id != g.user.id and not g.user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
     
     comment.content = data['content']
     comment.updated_at = datetime.utcnow()
-    db.commit()
-    
-    # Clear cache
-    cache_key = f'post:{comment.post_id}:comments'
-    redis_client.cache_delete(cache_key)
-    
-    return jsonify({
-        'id': comment.id,
-        'content': comment.content,
-        'updated_at': comment.updated_at.isoformat()
-    })
+    try:
+        db.commit()
+        
+        # Log the action
+        AuditLog.log_action(
+            db,
+            g.user.id,
+            'update',
+            'Comment',
+            comment.id,
+            {'content': data['content']},
+            request.remote_addr,
+            request.user_agent.string
+        )
+
+        # Clear cache
+        cache_key = f'post:{comment.post_id}:comments'
+        redis_client.cache_delete(cache_key)
+        
+        return jsonify(comment.to_dict())
+    except IntegrityError:
+        db.rollback()
+        return jsonify({'error': 'Database error occurred'}), 500
 
 @comments_bp.route('/comments/<int:comment_id>', methods=['DELETE'])
 @auth_required
@@ -165,17 +191,33 @@ def delete_comment(comment_id):
         return jsonify({'error': 'Comment not found'}), 404
     
     # Check if user owns comment or has moderator privileges
-    if comment.user_id != g.user.id and not any(role.name in ['admin', 'editor'] for role in g.user.roles):
+    if comment.user_id != g.user.id and not g.user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
     
-    db.delete(comment)
-    db.commit()
-    
-    # Clear cache
-    cache_key = f'post:{comment.post_id}:comments'
-    redis_client.cache_delete(cache_key)
-    
-    return '', 204
+    try:
+        db.delete(comment)
+        db.commit()
+        
+        # Log the action
+        AuditLog.log_action(
+            db,
+            g.user.id,
+            'delete',
+            'Comment',
+            comment_id,
+            None,
+            request.remote_addr,
+            request.user_agent.string
+        )
+
+        # Clear cache
+        cache_key = f'post:{comment.post_id}:comments'
+        redis_client.cache_delete(cache_key)
+        
+        return '', 204
+    except IntegrityError:
+        db.rollback()
+        return jsonify({'error': 'Database error occurred'}), 500
 
 @comments_bp.route('/comments/<int:comment_id>/approve', methods=['POST'])
 @auth_required
@@ -189,7 +231,7 @@ def approve_comment(comment_id):
     db = get_db()
     
     # Check if user has moderator privileges
-    if not any(role.name in ['admin', 'editor'] for role in g.user.roles):
+    if not g.user.is_admin:
         return jsonify({'error': 'Unauthorized'}), 403
     
     comment = db.query(Comment).get(comment_id)
@@ -197,13 +239,27 @@ def approve_comment(comment_id):
         return jsonify({'error': 'Comment not found'}), 404
     
     comment.is_approved = True
-    db.commit()
-    
-    # Clear cache
-    cache_key = f'post:{comment.post_id}:comments'
-    redis_client.cache_delete(cache_key)
-    
-    return jsonify({
-        'id': comment.id,
-        'is_approved': True
-    })
+    try:
+        db.commit()
+        
+        # Log the action
+        AuditLog.log_action(
+            db,
+            g.user.id,
+            'approve',
+            'Comment',
+            comment.id,
+            None,
+            request.remote_addr,
+            request.user_agent.string
+        )
+
+        # Clear cache
+        cache_key = f'post:{comment.post_id}:comments'
+        redis_client.cache_delete(cache_key)
+        
+        return jsonify({'id': comment.id, 'is_approved': True})
+    except IntegrityError:
+        db.rollback()
+        return jsonify({'error': 'Database error occurred'}), 500
+
