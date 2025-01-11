@@ -1,3 +1,14 @@
+#!/usr/bin/python3
+"""
+Posts management API endpoints.
+
+This module provides API endpoints for blog post management,
+including creation, retrieval, updating, and deletion of posts,
+along with related features like tags and categories.
+
+Classes:
+    PostsAPI: Class containing post-related API endpoints
+"""
 from flask import Blueprint, request, jsonify
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
@@ -10,17 +21,37 @@ from utils.redis_client import RedisClient
 from validators.validators import validate_slug
 from datetime import datetime
 from api.v1.auth import require_auth, get_db
-from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 
 posts_bp = Blueprint('posts', __name__)
 redis_client = RedisClient()
 
+# Cache configuration
+POST_CACHE_EXPIRY = 3600  # 1 hour in seconds
+
+def check_post_permissions(user_id: int, post: Post) -> bool:
+    """
+    Check if user has permission to modify post.
+    
+    Args:
+        user_id: ID of user making request
+        post: Post object to check
+        
+    Returns:
+        bool: True if user has permission
+    """
+    # Authors can modify their own posts
+    if post.user_id == user_id:
+        return True
+        
+    # TODO: Add role-based checks (editors/admins)
+    return False
+
 @posts_bp.route('/', methods=['POST'])
 @require_auth
 def create_post():
     """
-    Create new blog post endpoint with improved error handling.
+    Create new blog post endpoint.
     
     Request body:
         title: Post title
@@ -30,50 +61,20 @@ def create_post():
         status: Post status (draft/published)
         
     Returns:
-        Created post object or error message
+        Created post object
     """
     data = request.get_json()
     db = next(get_db())
     
     # Validate required fields
     required = ['title', 'content', 'category_id']
-    missing_fields = [field for field in required if field not in data]
-    if missing_fields:
-        return jsonify({
-            'error': 'Missing required fields',
-            'missing_fields': missing_fields
-        }), 400
-    
+    if not all(field in data for field in required):
+        return jsonify({'error': 'Missing required fields'}), 400
+        
     try:
-        # Verify category exists
-        category = db.query(Category).get(data['category_id'])
-        if not category:
-            return jsonify({
-                'error': 'Invalid category',
-                'details': f"Category with ID {data['category_id']} does not exist"
-            }), 404
-
         # Generate slug from title
-        try:
-            slug = validate_slug(data['title'])
-        except ValueError as e:
-            return jsonify({
-                'error': 'Invalid title',
-                'details': str(e)
-            }), 400
-
-        # Validate status if provided
-        if 'status' in data:
-            try:
-                status = PostStatus(data.get('status', 'draft'))
-            except ValueError:
-                return jsonify({
-                    'error': 'Invalid status',
-                    'details': f"Status must be one of: {[s.value for s in PostStatus]}"
-                }), 400
-        else:
-            status = PostStatus.DRAFT
-
+        slug = validate_slug(data['title'])
+        
         # Create post
         post = Post(
             title=data['title'],
@@ -81,59 +82,31 @@ def create_post():
             content=data['content'],
             category_id=data['category_id'],
             user_id=request.user_id,
-            status=status
+            status=PostStatus(data.get('status', 'draft'))
         )
         
-        # Handle optional fields with validation
+        # Handle optional fields
         if 'meta_description' in data:
-            if len(data['meta_description']) > 160:
-                return jsonify({
-                    'error': 'Invalid meta description',
-                    'details': 'Meta description must be 160 characters or less'
-                }), 400
             post.meta_description = data['meta_description']
-
         if 'featured_image_url' in data:
-            if len(data['featured_image_url']) > 255:
-                return jsonify({
-                    'error': 'Invalid featured image URL',
-                    'details': 'URL must be 255 characters or less'
-                }), 400
             post.featured_image_url = data['featured_image_url']
             
         # Handle tags
         if 'tags' in data:
-            if not isinstance(data['tags'], list):
-                return jsonify({
-                    'error': 'Invalid tags format',
-                    'details': 'Tags must be provided as a list'
-                }), 400
-                
             for tag_name in data['tags']:
-                if not isinstance(tag_name, str) or not tag_name.strip():
-                    return jsonify({
-                        'error': 'Invalid tag name',
-                        'details': 'Tag names must be non-empty strings'
-                    }), 400
-                    
                 tag = db.query(Tag).filter_by(name=tag_name).first()
                 if not tag:
-                    try:
-                        tag = Tag(
-                            name=tag_name,
-                            slug=validate_slug(tag_name)
-                        )
-                        db.add(tag)
-                    except ValueError as e:
-                        return jsonify({
-                            'error': 'Invalid tag name',
-                            'details': str(e)
-                        }), 400
+                    # Create new tag
+                    tag = Tag(
+                        name=tag_name,
+                        slug=validate_slug(tag_name)
+                    )
+                    db.add(tag)
                 post.tags.append(tag)
                 
         db.add(post)
-        db.flush()  # Get post ID without committing
-        
+        db.commit()
+
         # Create initial revision
         revision = PostRevision(
             post_id=post.id,
@@ -161,24 +134,341 @@ def create_post():
             'id': post.id,
             'title': post.title,
             'slug': post.slug,
-            'status': post.status.value,
-            'category': {
-                'id': category.id,
-                'name': category.name
-            },
-            'tags': [tag.name for tag in post.tags]
+            'status': post.status.value
         }), 201
         
-    except SQLAlchemyError as e:
-        db.rollback()
-        return jsonify({
-            'error': 'Database error',
-            'details': str(e)
-        }), 500
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
         
     except Exception as e:
         db.rollback()
+        return jsonify({'error': 'Failed to create post'}), 500
+
+@posts_bp.route('/', methods=['GET'])
+def list_posts():
+    """
+    List posts endpoint with filtering and pagination.
+    
+    Query params:
+        page: Page number (default: 1)
+        per_page: Items per page (default: 10)
+        status: Filter by status
+        category: Filter by category
+        tag: Filter by tag
+        search: Search in title/content
+        
+    Returns:
+        List of posts with pagination metadata
+    """
+    db = next(get_db())
+    
+    # Pagination params
+    page = int(request.args.get('page', 1))
+    per_page = min(int(request.args.get('per_page', 10)), 100)
+    
+    # Build query
+    query = db.query(Post)
+    
+    # Apply filters
+    if 'status' in request.args:
+        query = query.filter(Post.status == PostStatus(request.args['status']))
+    else:
+        # Default to published posts for public API
+        query = query.filter(Post.status == PostStatus.PUBLISHED)
+        
+    if 'category' in request.args:
+        query = query.filter(Post.category_id == request.args['category'])
+        
+    if 'tag' in request.args:
+        query = query.join(Post.tags).filter(Tag.slug == request.args['tag'])
+        
+    if 'search' in request.args:
+        search = f"%{request.args['search']}%"
+        query = query.filter(
+            or_(
+                Post.title.ilike(search),
+                Post.content.ilike(search)
+            )
+        )
+    
+    # Execute query with pagination
+    total = query.count()
+    posts = query.order_by(Post.created_at.desc()) \
+                 .offset((page - 1) * per_page) \
+                 .limit(per_page) \
+                 .all()
+                 
+    # Format response
+    return jsonify({
+        'posts': [{
+            'id': post.id,
+            'title': post.title,
+            'slug': post.slug,
+            'excerpt': post.content[:200] + '...' if len(post.content) > 200 else post.content,
+            'author': {
+                'id': post.author.id,
+                'username': post.author.username
+            },
+            'category': {
+                'id': post.category.id,
+                'name': post.category.name
+            },
+            'tags': [tag.name for tag in post.tags],
+            'created_at': post.created_at.isoformat(),
+            'status': post.status.value
+        } for post in posts],
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page
+        }
+    })
+
+@posts_bp.route('/<slug>', methods=['GET'])
+def get_post(slug: str):
+    """
+    Get single post by slug endpoint.
+    
+    URL params:
+        slug: Post URL slug
+        
+    Returns:
+        Post object if found
+    """
+    # Check cache first
+    cached = redis_client.cache_get(f'post:{slug}')
+    if cached:
+        return jsonify(cached)
+        
+    db = next(get_db())
+    post = db.query(Post).filter_by(slug=slug).first()
+    
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+        
+    # Increment view count
+    post.view_count += 1
+    db.commit()
+    
+    # Format response
+    response = {
+        'id': post.id,
+        'title': post.title,
+        'slug': post.slug,
+        'content': post.content,
+        'meta_description': post.meta_description,
+        'featured_image_url': post.featured_image_url,
+        'author': {
+            'id': post.author.id,
+            'username': post.author.username
+        },
+        'category': {
+            'id': post.category.id,
+            'name': post.category.name
+        },
+        'tags': [tag.name for tag in post.tags],
+        'created_at': post.created_at.isoformat(),
+        'updated_at': post.updated_at.isoformat(),
+        'status': post.status.value,
+        'view_count': post.view_count,
+        'like_count': post.like_count
+    }
+    
+    # Cache response
+    redis_client.cache_set(f'post:{slug}', response, POST_CACHE_EXPIRY)
+    
+    return jsonify(response)
+
+@posts_bp.route('/<slug>', methods=['PUT'])
+@require_auth
+def update_post(slug: str):
+    """
+    Update post endpoint.
+    
+    URL params:
+        slug: Post URL slug
+        
+    Request body:
+        title: New title (optional)
+        content: New content (optional)
+        category_id: New category ID (optional)
+        tags: New tag list (optional)
+        status: New status (optional)
+        
+    Returns:
+        Updated post object
+    """
+    data = request.get_json()
+    db = next(get_db())
+    
+    post = db.query(Post).filter_by(slug=slug).first()
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+        
+    # Check permissions
+    if not check_post_permissions(request.user_id, post):
+        return jsonify({'error': 'Permission denied'}), 403
+        
+    try:
+        # Create revision before updating
+        revision = PostRevision(
+            post_id=post.id,
+            title=post.title,
+            content=post.content,
+            created_by=request.user_id
+        )
+        db.add(revision)
+        
+        # Update fields
+        if 'title' in data:
+            post.title = data['title']
+            post.slug = validate_slug(data['title'])
+            
+        if 'content' in data:
+            post.content = data['content']
+            
+        if 'category_id' in data:
+            post.category_id = data['category_id']
+            
+        if 'status' in data:
+            post.status = PostStatus(data['status'])
+            
+        if 'meta_description' in data:
+            post.meta_description = data['meta_description']
+            
+        if 'featured_image_url' in data:
+            post.featured_image_url = data['featured_image_url']
+            
+        # Update tags
+        if 'tags' in data:
+            post.tags.clear()
+            for tag_name in data['tags']:
+                tag = db.query(Tag).filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(
+                        name=tag_name,
+                        slug=validate_slug(tag_name)
+                    )
+                    db.add(tag)
+                post.tags.append(tag)
+                
+        # Log update
+        AuditLog.log_action(
+            db,
+            request.user_id,
+            AuditActionType.UPDATE,
+            'Post',
+            post.id,
+            data,
+            request.remote_addr,
+            request.user_agent.string
+        )
+        
+        db.commit()
+        
+        # Invalidate cache
+        redis_client.cache_delete(f'post:{slug}')
+        
         return jsonify({
-            'error': 'Internal server error',
-            'details': str(e)
-        }), 500
+            'id': post.id,
+            'title': post.title,
+            'slug': post.slug,
+            'status': post.status.value
+        })
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+        
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': 'Failed to update post'}), 500
+
+@posts_bp.route('/<slug>', methods=['DELETE'])
+@require_auth
+def delete_post(slug: str):
+    """
+    Delete post endpoint.
+    
+    URL params:
+        slug: Post URL slug
+        
+    Returns:
+        Success message
+    """
+    db = next(get_db())
+    
+    post = db.query(Post).filter_by(slug=slug).first()
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+        
+    # Check permissions
+    if not check_post_permissions(request.user_id, post):
+        return jsonify({'error': 'Permission denied'}), 403
+        
+    try:
+        # Soft delete
+        post.deleted_at = datetime.utcnow()
+        
+        # Log deletion
+        AuditLog.log_action(
+            db,
+            request.user_id,
+            AuditActionType.DELETE,
+            'Post',
+            post.id,
+            None,
+            request.remote_addr,
+            request.user_agent.string
+        )
+        
+        db.commit()
+        
+        # Invalidate cache
+        redis_client.cache_delete(f'post:{slug}')
+        
+        return jsonify({'message': 'Post deleted successfully'})
+        
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': 'Failed to delete post'}), 500
+
+@posts_bp.route('/<slug>/like', methods=['POST'])
+@require_auth
+def like_post(slug: str):
+    """
+    Like/unlike post endpoint.
+    
+    URL params:
+        slug: Post URL slug
+        
+    Returns:
+        Updated like count
+    """
+    db = next(get_db())
+    
+    post = db.query(Post).filter_by(slug=slug).first()
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+        
+    # Toggle like
+    like_key = f'post:{post.id}:likes:{request.user_id}'
+    if redis_client.cache_get(like_key):
+        # Unlike
+        redis_client.cache_delete(like_key)
+        post.like_count = max(0, post.like_count - 1)
+    else:
+        # Like
+        redis_client.cache_set(like_key, True)
+        post.like_count += 1
+        
+    db.commit()
+    
+    # Invalidate post cache
+    redis_client.cache_delete(f'post:{slug}')
+    
+    return jsonify({
+        'like_count': post.like_count,
+        'liked': bool(redis_client.cache_get(like_key))
+    })
+
