@@ -10,9 +10,11 @@ from api.v1.auth import auth_bp
 from api.v1.posts import posts_bp
 from api.v1.categories import categories_bp
 from api.v1.tags import tags_bp
+from api.v1.comments import comments_bp
 from config.database import engine
 from models import Base
 from utils.redis_client import RedisClient
+import logging
 
 def create_app():
     """
@@ -34,7 +36,8 @@ def create_app():
     app.register_blueprint(posts_bp, url_prefix='/api/v1/posts')
     app.register_blueprint(categories_bp, url_prefix='/api/v1/categories')
     app.register_blueprint(tags_bp, url_prefix='/api/v1/tags')
-    
+    app.register_blueprint(comments_bp, url_prefix='/api/v1/comments')
+    app.logger.setLevel(logging.DEBUG)
     # Create database tables
     Base.metadata.create_all(bind=engine)
     
