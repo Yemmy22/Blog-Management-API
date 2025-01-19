@@ -24,28 +24,27 @@ redis_client = RedisClient()
 COMMENT_CACHE_EXPIRY = 300  # 5 minutes
 
 
-@comments_bp.route('/posts/<int:post_id>', methods=['POST'])
+@comments_bp.route('/post/<int:post_id>', methods=['POST'])
 @require_auth
 def create_comment(post_id):
-    print(f"Received request for post_id: {post_id}")
-    # Create a new comment on a post.
+    """Create a new comment on a post."""
     try:
         db = next(get_db())
         data = request.get_json()
-        
+
         if not data or 'content' not in data:
             return jsonify({'error': 'Content is required'}), 400
-        
-        # Check if post exists and is not deleted
-        post = db.query(Post).filter_by(slug=slug).first()
+
+        # Check if post exists
+        post = db.query(Post).filter_by(id=post_id, deleted_at=None).first()
         if not post:
             return jsonify({'error': 'Post not found'}), 404
-            
-        # Validate parent comment if provided
+
+        # Validate parent comment
         parent_id = data.get('parent_id')
         if parent_id:
             parent_comment = db.query(Comment).filter_by(
-                id=parent_id, 
+                id=parent_id,
                 post_id=post_id,
                 deleted_at=None
             ).first()
@@ -57,12 +56,11 @@ def create_comment(post_id):
             post_id=post_id,
             user_id=request.user_id,
             content=data['content'],
-            parent_id=data.get('parent_id'),
-            is_approved=True  # Could be based on user role/karma
+            parent_id=parent_id,
+            is_approved=True  # Change logic as needed for approval flow
         )
-        
         db.add(comment)
-        
+
         # Log creation
         AuditLog.log_action(
             db,
@@ -74,88 +72,84 @@ def create_comment(post_id):
             request.remote_addr,
             request.user_agent.string
         )
-        
+
         db.commit()
-        
-        # Invalidate caches
+
+        # Invalidate cache
         redis_client.cache_delete(f'post:{post_id}:comments')
-        redis_client.cache_delete(f'post:{post.slug}')  # Invalidate post cache too
-        
+
         return jsonify({
             'id': comment.id,
             'content': comment.content,
             'created_at': comment.created_at.isoformat(),
-            'user': {
-                'id': comment.user_id,
-                'username': comment.user.username
-            },
+            'user': {'id': comment.user_id},
             'is_approved': comment.is_approved,
             'parent_id': comment.parent_id
         }), 201
-        
-    except SQLAlchemyError as e:
-        db.rollback()
-        return jsonify({'error': 'Database error occurred'}), 500
 
-@comments_bp.route('/posts/<int:post_id>/comments', methods=['GET'])
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': 'Failed to create comment'}), 500
+
+
+@comments_bp.route('/post/<int:post_id>', methods=['GET'])
 def get_comments(post_id):
     """
     Get all approved comments for a post.
-    
+
     Query params:
         include_deleted: Include soft-deleted comments (admin only)
     """
     try:
         db = next(get_db())
-        
-        # Check if post exists
+        print(f"Fetching comments for post_id: {post_id}")
+
+        # Check if the post exists
         post = db.query(Post).filter_by(id=post_id, deleted_at=None).first()
         if not post:
+            print(f"Post with ID {post_id} not found.")
             return jsonify({'error': 'Post not found'}), 404
-        
-        # Try to get from cache first
+
+        # Check cache
         cache_key = f'post:{post_id}:comments'
         cached_comments = redis_client.cache_get(cache_key)
         if cached_comments:
+            print("Cache hit for comments")
             return jsonify(cached_comments)
+
+        print("Cache miss, querying database")
         
-        # Build query
-        query = db.query(Comment).filter(
+        # Fetch comments
+        comments = db.query(Comment).filter(
             Comment.post_id == post_id,
-            Comment.is_approved == True
-        )
-        
-        # Handle deleted comments
-        if not request.headers.get('Authorization'):
-            query = query.filter(Comment.deleted_at == None)
-        
-        # Get comments
-        comments = query.order_by(Comment.created_at.desc()).all()
-        
+            Comment.is_approved == True,
+            Comment.deleted_at == None
+        ).order_by(Comment.created_at.desc()).all()
+
+        print(f"Fetched {len(comments)} comments from database")
+
         # Format response
         response = [{
             'id': comment.id,
             'content': comment.content,
             'created_at': comment.created_at.isoformat(),
-            'updated_at': comment.updated_at.isoformat() if comment.updated_at else None,
-            'user': {
-                'id': comment.user_id,
-                'username': comment.user.username
-            },
-            'parent_id': comment.parent_id,
-            'deleted': comment.deleted_at is not None
+            'user': {'id': comment.user_id},
+            'parent_id': comment.parent_id
         } for comment in comments]
-        
-        # Cache the response
-        if not request.headers.get('Authorization'):
-            redis_client.cache_set(cache_key, response, COMMENT_CACHE_EXPIRY)
-        
-        return jsonify(response)
-        
-    except SQLAlchemyError:
-        return jsonify({'error': 'Database error occurred'}), 500
 
-@comments_bp.route('/comments/<int:comment_id>', methods=['PUT'])
+        # Cache the response
+        redis_client.cache_set(cache_key, response, COMMENT_CACHE_EXPIRY)
+        print("Comments cached successfully")
+
+        return jsonify(response)
+
+    except Exception as e:
+        print(f"Error fetching comments: {e}")
+        return jsonify({'error': 'Failed to fetch comments'}), 500
+
+
+
+@comments_bp.route('/<int:comment_id>', methods=['PUT'])
 @require_auth
 def update_comment(comment_id):
     """
@@ -212,7 +206,7 @@ def update_comment(comment_id):
         db.rollback()
         return jsonify({'error': 'Database error occurred'}), 500
 
-@comments_bp.route('/comments/<int:comment_id>', methods=['DELETE'])
+@comments_bp.route('/<int:comment_id>', methods=['DELETE'])
 @require_auth
 def delete_comment(comment_id):
     """

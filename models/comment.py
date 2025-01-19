@@ -28,6 +28,7 @@ class Comment(Base):
         content (Column): Comment text content
         is_approved (Column): Moderation status flag
         created_at (Column): Timestamp of comment creation
+        deleted_at (Column): Timestamp of comment deletion
         post (relationship): Many-to-one relationship with Post model
         user (relationship): Many-to-one relationship with User model
         parent (relationship): Self-referential relationship for threading
@@ -42,6 +43,7 @@ class Comment(Base):
     content = Column(Text, nullable=False)
     is_approved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    deleted_at = Column(DateTime, nullable=True)
 
     # Relationships
     post = relationship('Post', back_populates='comments')
