@@ -253,3 +253,31 @@ def delete_comment(comment_id):
     except SQLAlchemyError:
         db.rollback()
         return jsonify({'error': 'Database error occurred'}), 500
+
+@comments_bp.route('/replies/<int:comment_id>', methods=['GET'])
+def get_replies(comment_id):
+    """Retrieve replies for a specific comment."""
+    db = next(get_db())
+
+    try:
+        # Check if the parent comment exists
+        parent_comment = db.query(Comment).filter_by(id=comment_id).first()
+        if not parent_comment:
+            return jsonify({'error': 'Comment not found'}), 404
+
+        # Fetch replies
+        replies = db.query(Comment).filter_by(parent_id=comment_id).all()
+
+        # Format response
+        response = [{
+            'id': reply.id,
+            'content': reply.content,
+            'created_at': reply.created_at.isoformat(),
+            'user': {'id': reply.user_id}
+        } for reply in replies]
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        print(f"Error fetching replies: {e}")
+        return jsonify({'error': 'Failed to fetch replies'}), 500
