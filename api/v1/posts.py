@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 Posts management API endpoints.
 
@@ -8,6 +9,7 @@ along with related features like tags and categories.
 Classes:
     PostsAPI: Class containing post-related API endpoints
 """
+
 from flask import Blueprint, request, jsonify
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
