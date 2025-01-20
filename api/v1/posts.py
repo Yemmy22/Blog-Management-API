@@ -52,67 +52,65 @@ def check_post_permissions(user_id: int, post: Post) -> bool:
 @require_auth
 def create_post():
     """
-    Create new blog post endpoint with enhanced error handling
+    Create new blog post endpoint with enhanced error handling and validation.
     """
     data = request.get_json()
     db = next(get_db())
-    
+
     try:
         # Validate required fields
-        required = ['title', 'content', 'category_id']
-        if not all(field in data for field in required):
-            missing = [field for field in required if field not in data]
-            return jsonify({'error': f'Missing required fields: {", ".join(missing)}'}), 400
+        required_fields = ['title', 'content', 'category_id']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
 
         # Verify category exists
         category = db.query(Category).filter_by(id=data['category_id']).first()
         if not category:
             return jsonify({'error': f'Category with id {data["category_id"]} not found'}), 404
 
-        # Generate slug from title
+        # Generate unique slug from title
         try:
-            slug = validate_slug(data['title'])
+            base_slug = validate_slug(data['title'])
         except ValueError as e:
             return jsonify({'error': f'Invalid title for slug generation: {str(e)}'}), 400
 
-        # Check for duplicate slug
-        existing_post = db.query(Post).filter_by(slug=slug).first()
-        if existing_post:
-            return jsonify({'error': 'A post with this title already exists'}), 409
+        slug = base_slug
+        counter = 1
+        while db.query(Post).filter_by(slug=slug).first():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
 
-        # Create post with explicit status handling
-        status = PostStatus(data.get('status', 'draft'))
-        
+        # Determine post status
+        status = data.get('status', 'draft').lower()
+        if status not in PostStatus._value2member_map_:
+            return jsonify({'error': f'Invalid status: {status}. Allowed values are: {", ".join(PostStatus._value2member_map_.keys())}'}), 400
+
         post = Post(
             title=data['title'],
             slug=slug,
             content=data['content'],
             category_id=data['category_id'],
             user_id=request.user_id,
-            status=status
+            status=PostStatus(status)
         )
-        
-        # Handle optional fields with validation
-        if 'meta_description' in data:
-            post.meta_description = data['meta_description']
-        if 'featured_image_url' in data:
-            post.featured_image_url = data['featured_image_url']
-            
-        # Handle tags with explicit error handling
+
+        # Optional fields with validation
+        post.meta_description = data.get('meta_description')
+        post.featured_image_url = data.get('featured_image_url')
+
+        # Handle tags
         if 'tags' in data:
             for tag_name in data['tags']:
                 tag = db.query(Tag).filter_by(name=tag_name).first()
                 if not tag:
-                    tag = Tag(
-                        name=tag_name,
-                        slug=validate_slug(tag_name)
-                    )
+                    tag = Tag(name=tag_name, slug=validate_slug(tag_name))
                     db.add(tag)
                 post.tags.append(tag)
-                
+
         db.add(post)
         db.flush()  # Flush to get the post ID without committing
-        
+
         # Create initial revision
         revision = PostRevision(
             post_id=post.id,
@@ -121,42 +119,39 @@ def create_post():
             created_by=request.user_id
         )
         db.add(revision)
-        
-        # Log creation with explicit error handling
-        try:
-            AuditLog.log_action(
-                db,
-                request.user_id,
-                AuditActionType.CREATE,
-                'Post',
-                post.id,
-                data,
-                request.remote_addr,
-                request.user_agent.string
-            )
-        except Exception as e:
-            print(f"Audit log error: {str(e)}")  # Log but don't fail the request
-        
+
+        # Log creation
+        AuditLog.log_action(
+            db=db,
+            user_id=request.user_id,
+            action_type=AuditActionType.CREATE,
+            resource_type='Post',
+            resource_id=post.id,
+            data=data,
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string
+        )
+
         db.commit()
-        
+
         return jsonify({
             'id': post.id,
             'title': post.title,
             'slug': post.slug,
-            'status': post.status.value
+            'status': post.status.value,
+            'created_at': post.created_at.isoformat(),
+            'tags': [{'id': tag.id, 'name': tag.name} for tag in post.tags],
+            'category': {'id': category.id, 'name': category.name}
         }), 201
-        
-    except ValueError as e:
-        db.rollback()
-        return jsonify({'error': f'Validation error: {str(e)}'}), 400
-    except SQLAlchemyError as e:
-        db.rollback()
-        print(f"Database error: {str(e)}")  # Log the actual error
-        return jsonify({'error': 'Database error occurred'}), 500
+
     except Exception as e:
         db.rollback()
-        print(f"Unexpected error: {str(e)}")  # Log the actual error
+        print(f"Error creating post: {str(e)}")
         return jsonify({'error': 'Failed to create post'}), 500
+
+    finally:
+        db.close()
+
 
 @posts_bp.route('/', methods=['GET'])
 def list_posts():

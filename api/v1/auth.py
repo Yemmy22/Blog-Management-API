@@ -22,6 +22,7 @@ from functools import wraps
 import jwt
 from config.database import SessionLocal
 from models.audit_log import AuditLog, AuditActionType
+from utils.rate_limiter import rate_limit
 
 auth_bp = Blueprint('auth', __name__)
 redis_client = RedisClient()
@@ -73,6 +74,7 @@ def require_auth(f):
     return decorated
 
 @auth_bp.route('/login', methods=['POST'])
+@rate_limit(limit=5, period=60)  # Add rate limiting
 def login():
     """
     User login endpoint.
@@ -105,7 +107,7 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
         
     if not user.is_active:
-        return jsonify({'error': 'Account is inactive'}), 401
+        return jsonify({'error': 'Account is inactive'}), 403
         
     # Create session
     session_id = str(uuid.uuid4())
@@ -115,15 +117,18 @@ def login():
         'roles': [role.name for role in user.roles]
     }
     
-    # Store in Redis
-    redis_client.session_set(session_id, session_data, SESSION_EXPIRY)
+    try:
+        # Store in Redis
+        redis_client.session_set(session_id, session_data, SESSION_EXPIRY)
+    except Exception as e:
+        return jsonify({'error': 'Session creation failed'}), 500
     
     # Create JWT
     token = jwt.encode({
         'user_id': user.id,
         'session_id': session_id,
         'exp': datetime.utcnow() + timedelta(seconds=SESSION_EXPIRY)
-    }, JWT_SECRET)
+    }, JWT_SECRET, algorithm="HS256")
     
     # Update user last login
     user.last_login = datetime.utcnow()
@@ -180,6 +185,7 @@ def logout():
     return jsonify({'message': 'Logged out successfully'})
 
 @auth_bp.route('/reset-password', methods=['POST'])
+@rate_limit(limit=3, period=3600)  # Add rate limiting
 def request_password_reset():
     """
     Request password reset endpoint.
@@ -200,7 +206,7 @@ def request_password_reset():
     
     if not user:
         # Return success even if user not found (security)
-        return jsonify({'message': 'Password reset instructions sent if email exists'})
+        return jsonify({'message': 'Password reset instructions sent if email exists'}), 200
         
     # Generate reset token
     reset_token = str(uuid.uuid4())
@@ -209,12 +215,20 @@ def request_password_reset():
     # Update user
     user.password_reset_token = reset_token
     user.password_reset_expires = expires
-    db.commit()
     
-    # TODO: Send email with reset token
-    # In production, integrate with email service
+    try:
+        db.commit()
+    except Exception as e:
+        return jsonify({'error': 'Failed to generate reset token'}), 500
     
-    return jsonify({'message': 'Password reset instructions sent'})
+    # Simulate email sending
+    try:
+        print(f"Password reset token for {email}: {reset_token}")  # Replace with email service integration in the future
+    except Exception as e:
+        return jsonify({'error': 'Failed to send reset email'}), 500
+    
+    return jsonify({'message': 'Password reset instructions sent'}), 200
+
 
 @auth_bp.route('/reset-password/<token>', methods=['POST'])
 def reset_password(token):
