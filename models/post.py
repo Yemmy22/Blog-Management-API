@@ -55,6 +55,7 @@ class Post(Base):
         meta_description (Column): SEO meta description
         featured_image_url (Column): URL to post's featured image
         published_at (Column): Timestamp of publication
+        scheduled_at (Column): Timestamp of scheduled publication
         revisions (relationship): One-to-many relationship with PostRevision
     """
     __tablename__ = 'posts'
@@ -78,6 +79,7 @@ class Post(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     published_at = Column(DateTime)
     deleted_at = Column(DateTime)
+    scheduled_at = Column(DateTime, nullable=True)
 
     # Foreign keys
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
