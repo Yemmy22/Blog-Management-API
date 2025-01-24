@@ -1,5 +1,3 @@
-# api/v1/auth.py
-
 #!/usr/bin/python3
 """
 Authentication and session management API endpoints.
@@ -8,7 +6,7 @@ This module provides API endpoints for user authentication,
 session management, and related security features.
 
 Classes:
-    AuthAPI: Class containing authentication-related API endpoints
+    AuthAPI: Class containing authentication-related API endpoints.
 """
 from flask import Blueprint, request, jsonify
 from sqlalchemy.orm import Session
