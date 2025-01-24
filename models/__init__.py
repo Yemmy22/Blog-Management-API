@@ -19,7 +19,7 @@ from models.user import User, user_roles
 from models.category import Category
 from models.tag import Tag, post_tags
 from models.post_revision import PostRevision
-from models.post import Post
+from models.post import Post, PostStatus
 from models.comment import Comment
 
 __all__ = [
