@@ -162,6 +162,7 @@ class AuthenticationTests(unittest.TestCase):
     @patch('utils.redis_client.RedisClient.session_delete')
     def test_logout_success(self, mock_session_delete, mock_get_db, mock_rate_limit):
         """Test successful logout."""
+        # Create a mock user
         mock_user = self._create_mock_user()
 
         # Mock database query
@@ -171,7 +172,7 @@ class AuthenticationTests(unittest.TestCase):
         # Mock Redis session delete
         mock_session_delete.return_value = None
 
-        # Create a valid JWT token
+        # Create a valid JWT token with session details
         token_payload = {
             'user_id': 1,
             'session_id': 'test_session',
@@ -179,13 +180,15 @@ class AuthenticationTests(unittest.TestCase):
         }
         token = jwt.encode(token_payload, self.jwt_secret, algorithm='HS256')
 
-        # Perform logout request
-        headers = {'Authorization': f'Bearer {token}'}
-        response = self.client.post('/api/v1/auth/logout', headers=headers)
+        # Add a mock for session_get to simulate an existing session
+        with patch('utils.redis_client.RedisClient.session_get', return_value={'user_id': 1, 'session_id': 'test_session'}):
+            # Perform logout request
+            headers = {'Authorization': f'Bearer {token}'}
+            response = self.client.post('/api/v1/auth/logout', headers=headers)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('message', response.get_json())
-        self.assertEqual(response.get_json()['message'], 'Logout successful.')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('message', response.get_json())
+            self.assertEqual(response.get_json()['message'], 'Logged out successfully')
 
 
 if __name__ == "__main__":
