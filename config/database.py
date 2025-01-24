@@ -2,8 +2,13 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from os import getenv
 
-DATABASE_URL = "mysql+mysqldb://root@localhost/blog_management"
+DATABASE_URL = (
+    f"mysql+mysqldb://{getenv('DB_USER')}:{getenv('DB_PASSWORD')}@"
+    f"{getenv('DB_HOST')}/{getenv('DB_NAME')}"
+)
+
 
 engine = create_engine(
     DATABASE_URL,
