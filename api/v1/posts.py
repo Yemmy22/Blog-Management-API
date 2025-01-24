@@ -84,6 +84,13 @@ def create_post():
     if not all(field in data for field in required):
         return jsonify({'error': 'Missing required fields'}), 400
 
+    category = db.query(Category).filter_by(id=data['category_id']).first()
+    if not category:
+        # Create category if it doesn't exist
+        category = Category(name=data.get('category_name', f'Category {data["category_id"]}'))
+        db.add(category)
+        db.flush()  # This assigns an ID without committing
+
     # Validate scheduled_at
     scheduled_at = None
     if 'scheduled_at' in data:
