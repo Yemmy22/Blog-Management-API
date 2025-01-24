@@ -23,6 +23,7 @@ from validators.validators import validate_slug
 from datetime import datetime
 from api.v1.auth import require_auth, get_db
 from typing import List, Optional
+from datetime import datetime
 
 posts_bp = Blueprint('posts', __name__)
 redis_client = RedisClient()
@@ -82,6 +83,16 @@ def create_post():
     required = ['title', 'content', 'category_id']
     if not all(field in data for field in required):
         return jsonify({'error': 'Missing required fields'}), 400
+
+    # Validate scheduled_at
+    scheduled_at = None
+    if 'scheduled_at' in data:
+        try:
+            scheduled_at = datetime.fromisoformat(data['scheduled_at'])
+            if scheduled_at <= datetime.utcnow():
+                return jsonify({'error': 'Scheduled time must be in the future'}), 400
+        except ValueError:
+            return jsonify({'error': 'Invalid datetime format for scheduled_at'}), 400
 
     # Verify category
     category = db.query(Category).filter_by(id=data['category_id']).first()
