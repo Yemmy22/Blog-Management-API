@@ -1,3 +1,8 @@
+#!/usr/bin/python3
+"""
+Authentication unittest module
+"""
+
 import unittest
 from unittest.mock import patch, MagicMock
 import jwt

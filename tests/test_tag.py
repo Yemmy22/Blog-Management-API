@@ -1,3 +1,8 @@
+#!/usr/bin/python3
+"""
+Tags unittest module
+"""
+
 import unittest
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
