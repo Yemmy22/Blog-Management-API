@@ -4,48 +4,48 @@ The Blog Management API is a backend system designed for managing blog platforms
 ## Features
 The Blog Management API offers a comprehensive set of features tailored for managing blogs and user interactions. Below are its key functionalities:
 
-### Authentication & Authorization
-- JWT-based Authentication: Secure login and token-based session management.
-- Role-Based Access Control: Fine-grained permission management for roles like author, admin, and moderator.
-- Password Security: Passwords are securely hashed and validated using bcrypt.
-### Content Management
-- Posts: Create, retrieve, update, and delete (CRUD) blog posts.
-- Categories: Organize posts into categories with CRUD functionality.
-- Tags: Add tags to posts for better content discoverability.
-- Comments: Support for threaded comments with moderation options.
-### User Management
-- Registration & Login: User registration and secure login.
-- Session Management: Manage user sessions with Redis.
-- Password Reset: Users can request password resets via email.
-### Performance & Scalability
-- Caching: Redis is used to cache frequently accessed data for faster response times.
-- Rate Limiting: Prevent abuse by limiting the number of requests to public endpoints.
-### Data Integrity
-- Audit Logs: Track user and system activity for compliance and debugging.
-- Validation: Comprehensive input validation to ensure data consistency and security.
-### Developer-Friendly
-- RESTful API: Follows REST principles for predictable and easy-to-use endpoints.
-- Pagination: Built-in support for paginated data retrieval.
-- Comprehensive Documentation: Every API endpoint is well-documented for ease of integration.
+1. Authentication & Authorization
+	- JWT-based Authentication: Secure login and token-based session management.
+	- Role-Based Access Control: Fine-grained permission management for roles like author, admin, and moderator.
+	- Password Security: Passwords are securely hashed and validated using bcrypt.
+2. Content Management
+	- Posts: Create, retrieve, update, and delete (CRUD) blog posts.
+	- Categories: Organize posts into categories with CRUD functionality.
+	- Tags: Add tags to posts for better content discoverability.
+	- Comments: Support for threaded comments with moderation options.
+3. User Management
+	- Registration & Login: User registration and secure login.
+	- Session Management: Manage user sessions with Redis.
+	- Password Reset: Users can request password resets via email.
+4. Performance & Scalability
+	- Caching: Redis is used to cache frequently accessed data for faster response times.
+	- Rate Limiting: Prevent abuse by limiting the number of requests to public endpoints.
+5. Data Integrity
+	- Audit Logs: Track user and system activity for compliance and debugging.
+	- Validation: Comprehensive input validation to ensure data consistency and security.
+6. Developer-Friendly
+	- RESTful API: Follows REST principles for predictable and easy-to-use endpoints.
+	- Pagination: Built-in support for paginated data retrieval.
+	- Comprehensive Documentation: Every API endpoint is well-documented for ease of integration.
 
 ## Purpose
 The API is ideal for:
 
-Creating and managing blog posts, categories, and tags.
-Supporting multi-role user management (e.g., authors, admins).
-Moderating and managing comments.
-Providing scalable backend services with caching and rate limiting.
-Technology Stack
+	- Creating and managing blog posts, categories, and tags.
+	- Supporting multi-role user management (e.g., authors, admins).
+	- Moderating and managing comments.
+	- Providing scalable backend services with caching and rate limiting.
+
+## Technology Stack
 The API is built using:
 
-Flask: A lightweight Python web framework for building RESTful services.
-SQLAlchemy: For database management and ORM (Object Relational Mapping).
-Redis: For session management and caching.
-bcrypt: For secure password hashing and verification.
-JWT: For secure user authentication and authorization.
-MySQL: As the relational database system.
-Alembic: For database migrations.
-
+	- Flask: A lightweight Python web framework for building RESTful services.
+	- SQLAlchemy: For database management and ORM (Object Relational Mapping).
+	- Redis: For session management and caching.
+	- bcrypt: For secure password hashing and verification.
+	- JWT: For secure user authentication and authorization.
+	- MySQL: As the relational database system.
+	- Alembic: For database migrations.
 
 ## Project Architecture
 The Blog Management API is structured to ensure scalability, maintainability, and ease of collaboration. Below is the folder structure along with explanations of its key components:
@@ -85,49 +85,55 @@ The Blog Management API is structured to ensure scalability, maintainability, an
 ├── validators/
 │   ├── validators.py           # Input validation logic
 │   ├── __init__.py             # Validators initialization
-├── migrations/                 # Database migration scripts (managed by Alembic)
+├── Alembic/                 	# Database migration scripts
 ├── app.py                      # Entry point of the application
 ├── requirements.txt            # Python dependencies
 ├── init_db.py                  # Database initialization script
 └── README.md                   # Project documentation
 
 
-
-#####RECHECK#############################################################################################
-API (api/)
+* API (api/)
 Contains all the versioned API logic.
 Each module represents a resource (e.g., auth, posts, comments).
-Models (models/)
+
+* Models (models/)
 Defines the database schema and relationships using SQLAlchemy.
 Includes models for users, posts, comments, tags, and more.
-Utilities (utils/)
+
+* Utilities (utils/)
 Encapsulates reusable functionality, such as Redis utilities, password hashing, and rate limiting.
-Validators (validators/)
+
+* Validators (validators/)
 Centralized input validation for consistent and secure API handling.
-Configuration (config/)
+
+* Configuration (config/)
 Includes database configurations and connection logic.
-Migrations (migrations/)
+
+* Migrations (migrations/)
 Stores migration scripts to manage database schema changes over time.
-Tests (tests/)
+
+* Tests (tests/)
 Contains unit tests for all API modules to ensure functionality and prevent regressions.
-Entry Point (app.py)
+
+* Entry Point (app.py)
 The main file to run the Flask application, initializes the app, and registers all blueprints.
 
 
 ## Setup Instructions
 Follow these steps to set up and run the Blog Management API on your local machine.
 
-### Prerequisites
-Ensure the following are installed on your system:
+* Prerequisites
+	Ensure the following are installed on your system:
 
-- Python: Version 3.8 or higher.
-- MySQL: A running MySQL instance for the database.
-- Redis: A running Redis instance for session management and caching.
-- bycrypt: For password hashing.
+	- Python: Version 3.8 or higher.
+	- MySQL: A running MySQL instance for the database.
+	- Redis: A running Redis instance for session management and caching.
+	- bycrypt: For password hashing.
 
 	Step 1: Clone the Repository:
 		- git clone https://github.com/yourusername/Blog-Management-API.git
 		- cd Blog-management-api
+
 	Step 2: Set Up a Virtual Environment
 		- python3 -m venv venv
 		- source venv/bin/activate  # On Windows: venv\\Scripts\\activate
@@ -139,6 +145,7 @@ Ensure the following are installed on your system:
 		JWT_SECRET=your-secret-key
 		REDIS_HOST=localhost
 		REDIS_PORT=6379
+
 	Step 5: Initialize the Database
 		Run the database migration script to set up the schema: `flask db upgrade` or seed the database with 
 		initial data by running `python init_db.py`
@@ -148,6 +155,7 @@ Ensure the following are installed on your system:
 
 	Step 7: Run the Application
 		`fask run` or `python app.py`. The API will be accessible at http://127.0.0.1:5000.
+
 	Step 8: Running Unit Tests
 		To validate the setup and ensure all features work as expected, run the tests with 
 		`python3 -m unittest discover -s tests`
@@ -165,15 +173,11 @@ This section provides instructions on how to interact with the Blog Management A
 
 1. Login
 
-URL: /api/v1/auth/login
-
-Method: POST
-
-Description: Authenticates a user and provides a JWT token.
-
-Request Headers:
-
-Content-Type: application/json
+	* URL: /api/v1/auth/login
+	* Method: POST
+	* Description: Authenticates a user and provides a JWT token.
+	* Request Headers:
+	* Content-Type: application/json
 
 Request Body:
 
@@ -196,13 +200,11 @@ Response:
 Error Response:
 
 401 Unauthorized: Invalid credentials.
-
 403 Forbidden: Inactive account.
 
 2. Logout
 
-URL: /api/v1/auth/logout
-
+	* URL: /api/v1/auth/logout
 Method: POST
 
 Description: Logs out the user by invalidating the session.
