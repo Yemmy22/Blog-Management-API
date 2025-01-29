@@ -179,111 +179,103 @@ This section provides instructions on how to interact with the Blog Management A
 	* Request Headers:
 	* Content-Type: application/json
 
-Request Body:
+	Request Body:
 
-{
-  "username": "admin",
-  "password": "admin123"
-}
+	{
+	  "username": "admin",
+	  "password": "admin123"
+	}
 
-Response:
+	Response:
 
-{
-  "token": "<JWT_TOKEN>",
-  "user": {
-    "id": 1,
-    "username": "admin",
-    "roles": ["admin"]
-  }
-}
+	{
+	  "token": "<JWT_TOKEN>",
+	  "user": {
+	    "id": 1,
+	    "username": "admin",
+	    "roles": ["admin"]
+	  }
+	}
 
-Error Response:
+	Error Response:
 
-401 Unauthorized: Invalid credentials.
-403 Forbidden: Inactive account.
+	* 401 Unauthorized: Invalid credentials.
+	* 403 Forbidden: Inactive account.
+
 
 2. Logout
 
 	* URL: /api/v1/auth/logout
-Method: POST
+	* Method: POST
+	* Description: Logs out the user by invalidating the session.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
 
-Description: Logs out the user by invalidating the session.
+	Response:
 
-Request Headers:
+	{
+	  "message": "Logged out successfully"
+	}
 
-Authorization: Bearer <JWT_TOKEN>
 
-Response:
+	Error Response:
 
-{
-  "message": "Logged out successfully"
-}
-
-Error Response:
-
-401 Unauthorized: Invalid or missing token.
+	* 401 Unauthorized: Invalid or missing token.
 
 3. Session Verification
 
-URL: /api/v1/auth/session/verify
+	* URL: /api/v1/auth/session/verify
+	* Method: GET
+	* Description: Verifies the validity of a JWT token.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
 
-Method: GET
 
-Description: Verifies the validity of a JWT token.
+	Response:
 
-Request Headers:
+	{
+	  "valid": true
+	}
 
-Authorization: Bearer <JWT_TOKEN>
 
-Response:
+	Error Response:
 
-{
-  "valid": true
-}
+	* 401 Unauthorized: Invalid or expired token.
 
-Error Response:
-
-401 Unauthorized: Invalid or expired token.
 
 4. Request Password Reset
 
-URL: /api/v1/auth/reset-password
+	* URL: /api/v1/auth/reset-password
+	* Method: POST
+	* Description: Initiates a password reset request by sending a token to the user's email.
+	* Request Headers:
+	* Content-Type: application/json
 
-Method: POST
+	Request Body:
 
-Description: Initiates a password reset request by sending a token to the user's email.
+	{
+	  "email": "admin@example.com"
+	}
 
-Request Headers:
 
-Content-Type: application/json
+	Response:
 
-Request Body:
+	{
+	  "message": "Password reset link sent to email."
+	}
 
-{
-  "email": "admin@example.com"
-}
 
-Response:
+	Error Response:
 
-{
-  "message": "Password reset link sent to email."
-}
-
-Error Response:
-
-404 Not Found: Email not associated with any account.
+	* 404 Not Found: Email not associated with any account.
 
 5. Reset Password
 
-	URL: /api/v1/auth/reset-password/<reset_token>
-
-	Method: POST
-
-	Description: Resets the password using a valid reset token.
-
-	Request Headers:
-
-	Content-Type: application/json
+	* URL: /api/v1/auth/reset-password/<reset_token>
+	* Method: POST
+	* Description: Resets the password using a valid reset token.
+	* Request Headers:
+	* Content-Type: application/json
 
 	Request Body:
 
@@ -297,22 +289,19 @@ Error Response:
 	  "message": "Password reset successful."
 	}
 
+
 	Error Response:
 
-	400 Bad Request: Invalid or expired token.
+	* 400 Bad Request: Invalid or expired token.
 
 
 6. Authentication Error Codes
 
-	400 Bad Request: Missing or invalid parameters.
-
-	401 Unauthorized: Missing or invalid token.
-
-	403 Forbidden: Access denied.
-
-	404 Not Found: Resource not found.
-
-	409 Conflict: Duplicate resource.
+	* 400 Bad Request: Missing or invalid parameters.
+	* 401 Unauthorized: Missing or invalid token.
+	* 403 Forbidden: Access denied.
+	* 404 Not Found: Resource not found.
+	* 409 Conflict: Duplicate resource.
 
 
 ### Post Endpoints
@@ -692,7 +681,7 @@ Error Response:
 409 Conflict: Target slug already exists.
 
 
-Category Endpoints
+### Category Endpoints
 
 1. List All Categories
 
@@ -839,7 +828,7 @@ Error Response:
 
 
 
-Comment Endpoints
+### Comment Endpoints
 
 1. Add Comment to a Post
 
@@ -1002,12 +991,11 @@ Response:
   ]
 }
 
-Error Response:
+	Error Response:
 
-404 Not Found: Comment with the specified ID does not exist.
+	* 404 Not Found: Comment with the specified ID does not exist.
 
-Notes
-
+## Notes
 All requests requiring authorization must include a valid JWT token in the Authorization header.
 
 Comments and replies can have nested structures, allowing deeper levels of discussion.
