@@ -50,47 +50,7 @@ The API is built using:
 ## Project Architecture
 The Blog Management API is structured to ensure scalability, maintainability, and ease of collaboration. Below is the folder structure along with explanations of its key components:
 
-### Directory Structure
-`.
-├── api/
-│   ├── v1/                     # API version 1
-│   │   ├── auth.py             # Authentication endpoints
-│   │   ├── posts.py            # Endpoints for managing blog posts
-│   │   ├── comments.py         # Endpoints for managing comments
-│   │   ├── tags.py             # Endpoints for managing tags
-│   │   ├── categories.py       # Endpoints for managing categories
-│   ├── __init__.py             # API initialization
-├── config/
-│   ├── database.py             # Database connection and configuration
-├── models/
-│   ├── user.py                 # User model and related logic
-│   ├── post.py                 # Blog post model
-│   ├── comment.py              # Comment model
-│   ├── tag.py                  # Tag model
-│   ├── category.py             # Category model
-│   ├── audit_log.py            # Model for tracking system activity
-│   ├── user_session.py         # Model for managing user sessions
-│   ├── __init__.py             # Database models initialization
-├── tests/
-│   ├── test_auth.py            # Unit tests for authentication
-│   ├── test_post.py            # Unit tests for blog posts
-│   ├── test_comment.py         # Unit tests for comments
-│   ├── test_tag.py             # Unit tests for tags
-│   ├── test_category.py        # Unit tests for categories
-├── utils/
-│   ├── password.py             # Password hashing and verification utilities
-│   ├── redis_client.py         # Redis connection and utilities
-│   ├── rate_limiter.py         # Middleware for rate limiting
-│   ├── __init__.py             # Utilities initialization
-├── validators/
-│   ├── validators.py           # Input validation logic
-│   ├── __init__.py             # Validators initialization
-├── Alembic/                 	# Database migration scripts
-├── app.py                      # Entry point of the application
-├── requirements.txt            # Python dependencies
-├── init_db.py                  # Database initialization script
-└── README.md                   # Project documentation`
-
+### Directory Structures
 
 * API (api/)
 Contains all the versioned API logic.
@@ -109,7 +69,7 @@ Centralized input validation for consistent and secure API handling.
 * Configuration (config/)
 Includes database configurations and connection logic.
 
-* Migrations (migrations/)
+* Migrations (Alembic/)
 Stores migration scripts to manage database schema changes over time.
 
 * Tests (tests/)
@@ -117,6 +77,9 @@ Contains unit tests for all API modules to ensure functionality and prevent regr
 
 * Entry Point (app.py)
 The main file to run the Flask application, initializes the app, and registers all blueprints.
+
+* Database Seeding Script (init_db.py)
+Seeds the database with initial data.
 
 
 ## Setup Instructions
@@ -188,14 +151,14 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "token": "<JWT_TOKEN>",
 	  "user": {
 	    "id": 1,
 	    "username": "admin",
 	    "roles": ["admin"]
 	  }
-	}
+	}`
 
 	Error Response:
 
@@ -213,9 +176,9 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "message": "Logged out successfully"
-	}
+	}`
 
 
 	Error Response:
@@ -232,9 +195,9 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "valid": true
-	}
+	}`
 
 
 	Error Response:
@@ -251,16 +214,16 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "email": "admin@example.com"
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "message": "Password reset link sent to email."
-	}
+	}`
 
 
 	Error Response:
@@ -276,15 +239,15 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{	
+	`{	
 	  "password": "newpassword123"
-	}
+	}`
 
 	Response:
 
-	{
+	`{
 	  "message": "Password reset successful."
-	}
+	}`
 
 
 	Error Response:
@@ -305,23 +268,23 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "title": "Getting Started with Flask",
 	  "content": "Flask is a lightweight WSGI web application framework...",
 	  "category_id": 1,
 	  "tags": ["python", "web-development"],
 	  "status": "published"
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "slug": "getting-started-with-flask",
 	  "status": "published",
 	  "title": "Getting Started with Flask"
-	}
+	}`
 
 
 	Error Response:
@@ -340,7 +303,7 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "posts": [
 	    {
 	      "id": 1,
@@ -355,7 +318,7 @@ This section provides instructions on how to interact with the Blog Management A
 	    "per_page": 10,
 	    "total": 100
 	  }
-	}
+	}`
 
 	Error Response:
 	* 500 Internal Server Error: Server issues.
@@ -370,7 +333,7 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "title": "Getting Started with Flask",
 	  "slug": "getting-started-with-flask",
@@ -381,7 +344,7 @@ This section provides instructions on how to interact with the Blog Management A
 	    "name": "Programming"
 	  },
 	  "tags": ["python", "web-development"]
-	}
+	}`
 
 
 	Error Response:
@@ -400,21 +363,21 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "title": "Updated Title",
 	  "content": "Updated content...",
 	  "tags": ["updated", "flask"]
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "slug": "updated-title",
 	  "status": "published",
 	  "title": "Updated Title"
-	}
+	}`
 
 
 	Error Response:
@@ -430,9 +393,9 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "message": "Post deleted successfully."
-	}
+	}`
 
 	Error Response:
 	* 404 Not Found: Post not found.
@@ -450,19 +413,19 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "name": "python"
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "name": "python",
 	  "slug": "python",
 	  "created_at": "2025-01-01T12:00:00"
-	}
+	}`
 
 
 	Error Response:
@@ -477,7 +440,7 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "tags": [
 	    {
 	      "id": 1,
@@ -486,7 +449,7 @@ This section provides instructions on how to interact with the Blog Management A
 	      "created_at": "2025-01-01T12:00:00"
 	    }
 	  ]
-	}
+	}`
 
 	Error Response:
 	* 500 Internal Server Error: Server issues.
@@ -500,12 +463,12 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "name": "python",
 	  "slug": "python",
 	  "created_at": "2025-01-01T12:00:00"
-	}
+	}`
 
 	Error Response:
 	* 404 Not Found: Tag not found.
@@ -522,18 +485,18 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "name": "python-updated"
-	}
+	}`
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "name": "python-updated",
 	  "slug": "python-updated",
 	  "updated_at": "2025-01-01T12:30:00"
-	}
+	}`
 
 	Error Response:
 	* 404 Not Found: Tag not found.
@@ -550,9 +513,9 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "message": "Tag deleted successfully."
-	}
+	}`
 
 
 	Error Response:
@@ -571,7 +534,7 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "tags": [
 	    {
 	      "id": 1,
@@ -581,7 +544,7 @@ This section provides instructions on how to interact with the Blog Management A
 	      "post_count": 5
 	    }
 	  ]
-	}
+	}`
 
 
 	Error Response:
@@ -599,17 +562,17 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "source_slugs": ["python", "py"],
 	  "target_slug": "python-programming"
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "message": "Tags merged successfully."
-	}
+	}`
 
 
 	Error Response:
@@ -628,7 +591,7 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "categories": [
 	    {
 	      "id": 1,
@@ -641,7 +604,7 @@ This section provides instructions on how to interact with the Blog Management A
 	      "created_at": "2025-01-02T14:00:00"
 	    }
 	  ]
-	}
+	}`
 
 
 	Error Response:
@@ -659,18 +622,18 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "name": "Technology"
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "name": "Technology",
 	  "created_at": "2025-01-01T12:00:00"
-	}
+	}`
 
 
 	Error Response:
@@ -685,11 +648,11 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "name": "Technology",
 	  "created_at": "2025-01-01T12:00:00"
-	}
+	}`
 
 
 	Error Response:
@@ -706,18 +669,18 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "name": "Updated Technology"
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "name": "Updated Technology",
 	  "updated_at": "2025-01-05T12:00:00"
-	}
+	}`
 
 
 	Error Response:
@@ -735,9 +698,9 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "message": "Category deleted successfully."
-	}
+	}`
 
 
 	Error Response:
@@ -758,15 +721,15 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{	
+	`{	
 	  "content": "This is a new comment.",
 	  "parent_id": null
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "post_id": 10,
 	  "content": "This is a new comment.",
@@ -775,7 +738,7 @@ This section provides instructions on how to interact with the Blog Management A
 	    "username": "admin"
 	  },
 	  "created_at": "2025-01-01T12:00:00"
-	}
+	}`
 
 
 	Error Response:
@@ -790,7 +753,7 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "comments": [
 	    {
 	      "id": 1,
@@ -813,7 +776,7 @@ This section provides instructions on how to interact with the Blog Management A
 	      ]
 	    }
 	  ]
-	}
+	}`
 
 
 	Error Response:
@@ -830,18 +793,18 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Request Body:
 
-	{
+	`{
 	  "content": "This is an updated comment."
-	}
+	}`
 
 
 	Response:
 
-	{
+	`{
 	  "id": 1,
 	  "content": "This is an updated comment.",
 	  "updated_at": "2025-01-02T12:00:00"
-	}
+	}`
 
 
 	Error Response:
@@ -858,9 +821,9 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "message": "Comment deleted successfully."
-	}
+	}`
 
 
 	Error Response:
@@ -875,7 +838,7 @@ This section provides instructions on how to interact with the Blog Management A
 
 	Response:
 
-	{
+	`{
 	  "replies": [
 	    {
 	      "id": 2,
@@ -887,7 +850,7 @@ This section provides instructions on how to interact with the Blog Management A
 	      "created_at": "2025-01-01T13:00:00"
 	    }
 	  ]
-	}
+	}`
 
 
 	Error Response:
