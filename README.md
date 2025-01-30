@@ -51,7 +51,7 @@ The API is built using:
 The Blog Management API is structured to ensure scalability, maintainability, and ease of collaboration. Below is the folder structure along with explanations of its key components:
 
 ### Directory Structure
-.
+`.
 ├── api/
 │   ├── v1/                     # API version 1
 │   │   ├── auth.py             # Authentication endpoints
@@ -89,7 +89,7 @@ The Blog Management API is structured to ensure scalability, maintainability, an
 ├── app.py                      # Entry point of the application
 ├── requirements.txt            # Python dependencies
 ├── init_db.py                  # Database initialization script
-└── README.md                   # Project documentation
+└── README.md                   # Project documentation`
 
 
 * API (api/)
@@ -219,7 +219,6 @@ This section provides instructions on how to interact with the Blog Management A
 
 
 	Error Response:
-
 	* 401 Unauthorized: Invalid or missing token.
 
 3. Session Verification
@@ -228,7 +227,7 @@ This section provides instructions on how to interact with the Blog Management A
 	* Method: GET
 	* Description: Verifies the validity of a JWT token.
 	* Request Headers:
-	* Authorization: Bearer <JWT_TOKEN>
+		* Authorization: Bearer <JWT_TOKEN>
 
 
 	Response:
@@ -239,7 +238,6 @@ This section provides instructions on how to interact with the Blog Management A
 
 
 	Error Response:
-
 	* 401 Unauthorized: Invalid or expired token.
 
 
@@ -266,7 +264,6 @@ This section provides instructions on how to interact with the Blog Management A
 
 
 	Error Response:
-
 	* 404 Not Found: Email not associated with any account.
 
 5. Reset Password
@@ -291,709 +288,617 @@ This section provides instructions on how to interact with the Blog Management A
 
 
 	Error Response:
-
 	* 400 Bad Request: Invalid or expired token.
-
-
-6. Authentication Error Codes
-
-	* 400 Bad Request: Missing or invalid parameters.
-	* 401 Unauthorized: Missing or invalid token.
-	* 403 Forbidden: Access denied.
-	* 404 Not Found: Resource not found.
-	* 409 Conflict: Duplicate resource.
 
 
 ### Post Endpoints
 
 1. Create Post
 
-URL: /api/v1/posts/
+	* URL: /api/v1/posts/
+	* Method: POST
+	* Description: Creates a new blog post.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: POST
 
-Description: Creates a new blog post.
+	Request Body:
 
-Request Headers:
+	{
+	  "title": "Getting Started with Flask",
+	  "content": "Flask is a lightweight WSGI web application framework...",
+	  "category_id": 1,
+	  "tags": ["python", "web-development"],
+	  "status": "published"
+	}
 
-Authorization: Bearer <JWT_TOKEN>
 
-Content-Type: application/json
+	Response:
 
-Request Body:
+	{
+	  "id": 1,
+	  "slug": "getting-started-with-flask",
+	  "status": "published",
+	  "title": "Getting Started with Flask"
+	}
 
-{
-  "title": "Getting Started with Flask",
-  "content": "Flask is a lightweight WSGI web application framework...",
-  "category_id": 1,
-  "tags": ["python", "web-development"],
-  "status": "published"
-}
 
-Response:
-
-{
-  "id": 1,
-  "slug": "getting-started-with-flask",
-  "status": "published",
-  "title": "Getting Started with Flask"
-}
-
-Error Response:
-
-400 Bad Request: Missing required fields.
-
-404 Not Found: Category not found.
+	Error Response:
+	* 400 Bad Request: Missing required fields.
+	* 404 Not Found: Category not found.
 
 2. Get All Posts
 
-URL: /api/v1/posts/
+	* URL: /api/v1/posts/
+	* Method: GET
+	* Description: Retrieves a paginated list of blog posts.
+	* Query Parameters:
+	* page: Page number (default: 1).
+	* per_page: Number of posts per page (default: 10).
 
-Method: GET
 
-Description: Retrieves a paginated list of blog posts.
+	Response:
 
-Query Parameters:
+	{
+	  "posts": [
+	    {
+	      "id": 1,
+	      "title": "Getting Started with Flask",
+	      "slug": "getting-started-with-flask",
+	      "status": "published",
+	      "created_at": "2025-01-01T12:00:00"
+	    }
+	  ],
+	  "pagination": {
+	    "page": 1,
+	    "per_page": 10,
+	    "total": 100
+	  }
+	}
 
-page: Page number (default: 1).
+	Error Response:
+	* 500 Internal Server Error: Server issues.
 
-per_page: Number of posts per page (default: 10).
-
-Response:
-
-{
-  "posts": [
-    {
-      "id": 1,
-      "title": "Getting Started with Flask",
-      "slug": "getting-started-with-flask",
-      "status": "published",
-      "created_at": "2025-01-01T12:00:00"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "per_page": 10,
-    "total": 100
-  }
-}
-
-Error Response:
-
-500 Internal Server Error: Server issues.
 
 3. Get Post by Slug
 
-URL: /api/v1/posts/<slug>
+	* URL: /api/v1/posts/<slug>
+	* Method: GET
+	* Description: Retrieves details of a specific post by its slug.
 
-Method: GET
 
-Description: Retrieves details of a specific post by its slug.
+	Response:
 
-Response:
+	{
+	  "id": 1,
+	  "title": "Getting Started with Flask",
+	  "slug": "getting-started-with-flask",
+	  "content": "Flask is a lightweight WSGI web application framework...",
+	  "status": "published",
+	  "category": {
+	    "id": 1,
+	    "name": "Programming"
+	  },
+	  "tags": ["python", "web-development"]
+	}
 
-{
-  "id": 1,
-  "title": "Getting Started with Flask",
-  "slug": "getting-started-with-flask",
-  "content": "Flask is a lightweight WSGI web application framework...",
-  "status": "published",
-  "category": {
-    "id": 1,
-    "name": "Programming"
-  },
-  "tags": ["python", "web-development"]
-}
 
-Error Response:
+	Error Response:
+	* 404 Not Found: Post not found.
 
-404 Not Found: Post not found.
 
 4. Update Post
 
-URL: /api/v1/posts/<slug>
+	* URL: /api/v1/posts/<slug>
+	* Method: PUT
+	* Description: Updates an existing post.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: PUT
 
-Description: Updates an existing post.
+	Request Body:
 
-Request Headers:
+	{
+	  "title": "Updated Title",
+	  "content": "Updated content...",
+	  "tags": ["updated", "flask"]
+	}
 
-Authorization: Bearer <JWT_TOKEN>
 
-Content-Type: application/json
+	Response:
 
-Request Body:
+	{
+	  "id": 1,
+	  "slug": "updated-title",
+	  "status": "published",
+	  "title": "Updated Title"
+	}
 
-{
-  "title": "Updated Title",
-  "content": "Updated content...",
-  "tags": ["updated", "flask"]
-}
 
-Response:
-
-{
-  "id": 1,
-  "slug": "updated-title",
-  "status": "published",
-  "title": "Updated Title"
-}
-
-Error Response:
-
-404 Not Found: Post not found.
+	Error Response:
+	* 404 Not Found: Post not found.
 
 5. Delete Post
 
-URL: /api/v1/posts/<slug>
+	* URL: /api/v1/posts/<slug>
+	* Method: DELETE
+	* Description: Deletes a post by its slug.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
 
-Method: DELETE
+	Response:
 
-Description: Deletes a post by its slug.
+	{
+	  "message": "Post deleted successfully."
+	}
 
-Request Headers:
-
-Authorization: Bearer <JWT_TOKEN>
-
-Response:
-
-{
-  "message": "Post deleted successfully."
-}
-
-Error Response:
-
-404 Not Found: Post not found.
-
-6. Error Codes
-
-	400 Bad Request: Missing or invalid parameters.
-
-	401 Unauthorized: Missing or invalid token.
-
-	403 Forbidden: Access denied.
-
-	404 Not Found: Resource not found.
-
-	409 Conflict: Duplicate resource.
-
+	Error Response:
+	* 404 Not Found: Post not found.
 
 ### Tag Endpoints
 
 1. Create Tag
 
-URL: /api/v1/tags/
+	* URL: /api/v1/tags/
+	* Method: POST
+	* Description: Creates a new tag.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: POST
+	Request Body:
 
-Description: Creates a new tag.
+	{
+	  "name": "python"
+	}
 
-Request Headers:
 
-Authorization: Bearer <JWT_TOKEN>
+	Response:
 
-Content-Type: application/json
+	{
+	  "id": 1,
+	  "name": "python",
+	  "slug": "python",
+	  "created_at": "2025-01-01T12:00:00"
+	}
 
-Request Body:
 
-{
-  "name": "python"
-}
+	Error Response:
+	* 409 Conflict: Tag with the same name already exists.
 
-Response:
-
-{
-  "id": 1,
-  "name": "python",
-  "slug": "python",
-  "created_at": "2025-01-01T12:00:00"
-}
-
-Error Response:
-
-409 Conflict: Tag with the same name already exists.
 
 2. Get All Tags
 
-URL: /api/v1/tags/
+	* URL: /api/v1/tags/
+	* Method: GET
+	* Description: Retrieves all tags.
 
-Method: GET
+	Response:
 
-Description: Retrieves all tags.
+	{
+	  "tags": [
+	    {
+	      "id": 1,
+	      "name": "python",
+	      "slug": "python",
+	      "created_at": "2025-01-01T12:00:00"
+	    }
+	  ]
+	}
 
-Response:
+	Error Response:
+	* 500 Internal Server Error: Server issues.
 
-{
-  "tags": [
-    {
-      "id": 1,
-      "name": "python",
-      "slug": "python",
-      "created_at": "2025-01-01T12:00:00"
-    }
-  ]
-}
-
-Error Response:
-
-500 Internal Server Error: Server issues.
 
 3. Get Tag by Slug
 
-URL: /api/v1/tags/<slug>
+	* URL: /api/v1/tags/<slug>
+	* Method: GET
+	* Description: Retrieves details of a specific tag by its slug.
 
-Method: GET
+	Response:
 
-Description: Retrieves details of a specific tag by its slug.
+	{
+	  "id": 1,
+	  "name": "python",
+	  "slug": "python",
+	  "created_at": "2025-01-01T12:00:00"
+	}
 
-Response:
+	Error Response:
+	* 404 Not Found: Tag not found.
 
-{
-  "id": 1,
-  "name": "python",
-  "slug": "python",
-  "created_at": "2025-01-01T12:00:00"
-}
-
-Error Response:
-
-404 Not Found: Tag not found.
 
 4. Update Tag
 
-URL: /api/v1/tags/<slug>
+	* URL: /api/v1/tags/<slug>
+	* Method: PUT
+	* Description: Updates an existing tag.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: PUT
+	Request Body:
 
-Description: Updates an existing tag.
+	{
+	  "name": "python-updated"
+	}
 
-Request Headers:
+	Response:
 
-Authorization: Bearer <JWT_TOKEN>
+	{
+	  "id": 1,
+	  "name": "python-updated",
+	  "slug": "python-updated",
+	  "updated_at": "2025-01-01T12:30:00"
+	}
 
-Content-Type: application/json
+	Error Response:
+	* 404 Not Found: Tag not found.
 
-Request Body:
-
-{
-  "name": "python-updated"
-}
-
-Response:
-
-{
-  "id": 1,
-  "name": "python-updated",
-  "slug": "python-updated",
-  "updated_at": "2025-01-01T12:30:00"
-}
-
-Error Response:
-
-404 Not Found: Tag not found.
 
 5. Delete Tag
 
-URL: /api/v1/tags/<slug>
+	* URL: /api/v1/tags/<slug>
+	* Method: DELETE
+	* Description: Deletes a tag by its slug.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
 
-Method: DELETE
 
-Description: Deletes a tag by its slug.
+	Response:
 
-Request Headers:
+	{
+	  "message": "Tag deleted successfully."
+	}
 
-Authorization: Bearer <JWT_TOKEN>
 
-Response:
+	Error Response:
+	* 404 Not Found: Tag not found.
 
-{
-  "message": "Tag deleted successfully."
-}
-
-Error Response:
-
-404 Not Found: Tag not found.
 
 6. Search Tags
 
-URL: /api/v1/tags/
+	* URL: /api/v1/tags/
+	* Method: GET
+	* Description: Retrieves tags based on search criteria.
+	* Query Parameters:
+	* search: Keyword to search for tags.
+	* include_stats: Whether to include tag usage statistics (true/false).
 
-Method: GET
 
-Description: Retrieves tags based on search criteria.
+	Response:
 
-Query Parameters:
+	{
+	  "tags": [
+	    {
+	      "id": 1,
+	      "name": "python",
+	      "slug": "python",
+	      "created_at": "2025-01-01T12:00:00",
+	      "post_count": 5
+	    }
+	  ]
+	}
 
-search: Keyword to search for tags.
 
-include_stats: Whether to include tag usage statistics (true/false).
+	Error Response:
+	* 500 Internal Server Error: Server issues.
 
-Response:
-
-{
-  "tags": [
-    {
-      "id": 1,
-      "name": "python",
-      "slug": "python",
-      "created_at": "2025-01-01T12:00:00",
-      "post_count": 5
-    }
-  ]
-}
-
-Error Response:
-
-500 Internal Server Error: Server issues.
 
 7. Merge Tags
 
-URL: /api/v1/tags/merge
+	* URL: /api/v1/tags/merge
+	* Method: POST
+	* Description: Merges multiple tags into one.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: POST
+	Request Body:
 
-Description: Merges multiple tags into one.
+	{
+	  "source_slugs": ["python", "py"],
+	  "target_slug": "python-programming"
+	}
 
-Request Headers:
 
-Authorization: Bearer <JWT_TOKEN>
+	Response:
 
-Content-Type: application/json
+	{
+	  "message": "Tags merged successfully."
+	}
 
-Request Body:
 
-{
-  "source_slugs": ["python", "py"],
-  "target_slug": "python-programming"
-}
-
-Response:
-
-{
-  "message": "Tags merged successfully."
-}
-
-Error Response:
-
-404 Not Found: One or more source tags not found.
-
-409 Conflict: Target slug already exists.
+	Error Response:
+	* 404 Not Found: One or more source tags not found.
+	* 409 Conflict: Target slug already exists.
 
 
 ### Category Endpoints
 
 1. List All Categories
 
-URL: /api/v1/categories/
+	* URL: /api/v1/categories/
+	* Method: GET
+	* Description: Retrieves a list of all categories.
 
-Method: GET
 
-Description: Retrieves a list of all categories.
+	Response:
 
-Response:
+	{
+	  "categories": [
+	    {
+	      "id": 1,
+	      "name": "Technology",
+	      "created_at": "2025-01-01T12:00:00"
+	    },
+	    {
+	      "id": 2,
+	      "name": "Programming",
+	      "created_at": "2025-01-02T14:00:00"
+	    }
+	  ]
+	}
 
-{
-  "categories": [
-    {
-      "id": 1,
-      "name": "Technology",
-      "created_at": "2025-01-01T12:00:00"
-    },
-    {
-      "id": 2,
-      "name": "Programming",
-      "created_at": "2025-01-02T14:00:00"
-    }
-  ]
-}
 
-Error Response:
-
-500 Internal Server Error: An error occurred while retrieving categories.
+	Error Response:
+	* 500 Internal Server Error: An error occurred while retrieving categories.
 
 2. Create a Category
 
-URL: /api/v1/categories/
+	* URL: /api/v1/categories/
+	* Method: POST
+	* Description: Creates a new category.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: POST
 
-Description: Creates a new category.
+	Request Body:
 
-Request Headers:
+	{
+	  "name": "Technology"
+	}
 
-Authorization: Bearer <JWT_TOKEN>
 
-Content-Type: application/json
+	Response:
 
-Request Body:
+	{
+	  "id": 1,
+	  "name": "Technology",
+	  "created_at": "2025-01-01T12:00:00"
+	}
 
-{
-  "name": "Technology"
-}
 
-Response:
-
-{
-  "id": 1,
-  "name": "Technology",
-  "created_at": "2025-01-01T12:00:00"
-}
-
-Error Response:
-
-400 Bad Request: Missing required fields.
-
-409 Conflict: Category with the same name already exists.
+	Error Response:
+	* 400 Bad Request: Missing required fields.
+	* 409 Conflict: Category with the same name already exists.
 
 3. Get a Category by ID
 
-URL: /api/v1/categories/<id>
+	* URL: /api/v1/categories/<id>
+	* Method: GET
+	* Description: Retrieves details of a specific category by its ID.
 
-Method: GET
+	Response:
 
-Description: Retrieves details of a specific category by its ID.
+	{
+	  "id": 1,
+	  "name": "Technology",
+	  "created_at": "2025-01-01T12:00:00"
+	}
 
-Response:
 
-{
-  "id": 1,
-  "name": "Technology",
-  "created_at": "2025-01-01T12:00:00"
-}
-
-Error Response:
-
-404 Not Found: Category with the specified ID does not exist.
+	Error Response:
+	* 404 Not Found: Category with the specified ID does not exist.
 
 4. Update a Category
 
-URL: /api/v1/categories/<id>
+	* URL: /api/v1/categories/<id>
+	* Method: PUT
+	* Description: Updates an existing category.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: PUT
+	Request Body:
 
-Description: Updates an existing category.
+	{
+	  "name": "Updated Technology"
+	}
 
-Request Headers:
 
-Authorization: Bearer <JWT_TOKEN>
+	Response:
 
-Content-Type: application/json
+	{
+	  "id": 1,
+	  "name": "Updated Technology",
+	  "updated_at": "2025-01-05T12:00:00"
+	}
 
-Request Body:
 
-{
-  "name": "Updated Technology"
-}
-
-Response:
-
-{
-  "id": 1,
-  "name": "Updated Technology",
-  "updated_at": "2025-01-05T12:00:00"
-}
-
-Error Response:
-
-400 Bad Request: Missing required fields.
-
-404 Not Found: Category with the specified ID does not exist.
-
-409 Conflict: Category with the same name already exists.
+	Error Response:
+	* 400 Bad Request: Missing required fields.
+	* 404 Not Found: Category with the specified ID does not exist.
+	* 409 Conflict: Category with the same name already exists.
 
 5. Delete a Category
 
-URL: /api/v1/categories/<id>
+	* URL: /api/v1/categories/<id>
+	* Method: DELETE
+	* Description: Deletes a category by its ID.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
 
-Method: DELETE
+	Response:
 
-Description: Deletes a category by its ID.
+	{
+	  "message": "Category deleted successfully."
+	}
 
-Request Headers:
 
-Authorization: Bearer <JWT_TOKEN>
-
-Response:
-
-{
-  "message": "Category deleted successfully."
-}
-
-Error Response:
-
-404 Not Found: Category with the specified ID does not exist.
-
-400 Bad Request: Category cannot be deleted because it is associated with existing posts.
-
+	Error Response:
+	* 404 Not Found: Category with the specified ID does not exist.
+	* 400 Bad Request: Category cannot be deleted because it is associated with existing posts.
 
 
 ### Comment Endpoints
 
 1. Add Comment to a Post
 
-URL: /api/v1/comments/post/<post_id>
+	* URL: /api/v1/comments/post/<post_id>
+	* Method: POST
+	* Description: Adds a comment to a specific post.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: POST
+	Request Body:
 
-Description: Adds a comment to a specific post.
+	{	
+	  "content": "This is a new comment.",
+	  "parent_id": null
+	}
 
-Request Headers:
 
-Authorization: Bearer <JWT_TOKEN>
+	Response:
 
-Content-Type: application/json
+	{
+	  "id": 1,
+	  "post_id": 10,
+	  "content": "This is a new comment.",
+	  "user": {
+	    "id": 1,
+	    "username": "admin"
+	  },
+	  "created_at": "2025-01-01T12:00:00"
+	}
 
-Request Body:
 
-{
-  "content": "This is a new comment.",
-  "parent_id": null
-}
-
-Response:
-
-{
-  "id": 1,
-  "post_id": 10,
-  "content": "This is a new comment.",
-  "user": {
-    "id": 1,
-    "username": "admin"
-  },
-  "created_at": "2025-01-01T12:00:00"
-}
-
-Error Response:
-
-400 Bad Request: Missing required fields.
-
-404 Not Found: Post with the specified ID does not exist.
+	Error Response:
+	* 400 Bad Request: Missing required fields.
+	* 404 Not Found: Post with the specified ID does not exist.
 
 2. Get Comments for a Post
 
-URL: /api/v1/comments/post/<post_id>
+	* URL: /api/v1/comments/post/<post_id>
+	* Method: GET
+	* Description: Retrieves all comments associated with a specific post.
 
-Method: GET
+	Response:
 
-Description: Retrieves all comments associated with a specific post.
+	{
+	  "comments": [
+	    {
+	      "id": 1,
+	      "content": "This is a comment.",
+	      "user": {
+	        "id": 1,
+	        "username": "admin"
+	      },
+	      "created_at": "2025-01-01T12:00:00",
+	      "replies": [
+	        {
+	          "id": 2,
+	          "content": "This is a reply.",
+	          "user": {
+	            "id": 2,
+	            "username": "user1"
+	          },
+	          "created_at": "2025-01-01T13:00:00"
+	        }
+	      ]
+	    }
+	  ]
+	}
 
-Response:
 
-{
-  "comments": [
-    {
-      "id": 1,
-      "content": "This is a comment.",
-      "user": {
-        "id": 1,
-        "username": "admin"
-      },
-      "created_at": "2025-01-01T12:00:00",
-      "replies": [
-        {
-          "id": 2,
-          "content": "This is a reply.",
-          "user": {
-            "id": 2,
-            "username": "user1"
-          },
-          "created_at": "2025-01-01T13:00:00"
-        }
-      ]
-    }
-  ]
-}
-
-Error Response:
-
-404 Not Found: Post with the specified ID does not exist.
+	Error Response:
+	* 404 Not Found: Post with the specified ID does not exist.
 
 3. Update a Comment
 
-URL: /api/v1/comments/<comment_id>
+	* URL: /api/v1/comments/<comment_id>
+	* Method: PUT
+	* Description: Updates an existing comment.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
+	* Content-Type: application/json
 
-Method: PUT
+	Request Body:
 
-Description: Updates an existing comment.
+	{
+	  "content": "This is an updated comment."
+	}
 
-Request Headers:
 
-Authorization: Bearer <JWT_TOKEN>
+	Response:
 
-Content-Type: application/json
+	{
+	  "id": 1,
+	  "content": "This is an updated comment.",
+	  "updated_at": "2025-01-02T12:00:00"
+	}
 
-Request Body:
 
-{
-  "content": "This is an updated comment."
-}
-
-Response:
-
-{
-  "id": 1,
-  "content": "This is an updated comment.",
-  "updated_at": "2025-01-02T12:00:00"
-}
-
-Error Response:
-
-400 Bad Request: Missing required fields.
-
-404 Not Found: Comment with the specified ID does not exist.
+	Error Response:
+	* 400 Bad Request: Missing required fields.
+	* 404 Not Found: Comment with the specified ID does not exist.
 
 4. Delete a Comment
 
-URL: /api/v1/comments/<comment_id>
+	* URL: /api/v1/comments/<comment_id>
+	* Method: DELETE
+	* Description: Deletes a comment by its ID.
+	* Request Headers:
+	* Authorization: Bearer <JWT_TOKEN>
 
-Method: DELETE
+	Response:
 
-Description: Deletes a comment by its ID.
+	{
+	  "message": "Comment deleted successfully."
+	}
 
-Request Headers:
 
-Authorization: Bearer <JWT_TOKEN>
-
-Response:
-
-{
-  "message": "Comment deleted successfully."
-}
-
-Error Response:
-
-404 Not Found: Comment with the specified ID does not exist.
-
-400 Bad Request: Comment cannot be deleted because it has replies.
+	Error Response:
+	* 404 Not Found: Comment with the specified ID does not exist.
+	* 400 Bad Request: Comment cannot be deleted because it has replies.
 
 5. Get Replies for a Comment
 
-URL: /api/v1/comments/replies/<comment_id>
+	* URL: /api/v1/comments/replies/<comment_id>
+	* Method: GET
+	* Description: Retrieves replies to a specific comment.
 
-Method: GET
+	Response:
 
-Description: Retrieves replies to a specific comment.
+	{
+	  "replies": [
+	    {
+	      "id": 2,
+	      "content": "This is a reply.",
+	      "user": {
+	        "id": 2,
+	        "username": "user1"
+	      },
+	      "created_at": "2025-01-01T13:00:00"
+	    }
+	  ]
+	}
 
-Response:
-
-{
-  "replies": [
-    {
-      "id": 2,
-      "content": "This is a reply.",
-      "user": {
-        "id": 2,
-        "username": "user1"
-      },
-      "created_at": "2025-01-01T13:00:00"
-    }
-  ]
-}
 
 	Error Response:
-
 	* 404 Not Found: Comment with the specified ID does not exist.
+
+## Error Codes
+* 400 Bad Request: Missing or invalid parameters.
+* 401 Unauthorized: Missing or invalid token.
+* 403 Forbidden: Access denied.
+* 404 Not Found: Resource not found.
+* 409 Conflict: Duplicate resource.
 
 ## Notes
 All requests requiring authorization must include a valid JWT token in the Authorization header.
